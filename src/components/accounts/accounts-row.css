@@ -1,0 +1,161 @@
+.accounts-row {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.accounts-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.accounts-row::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.accounts-row::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
+}
+
+/* Shared card dimensions */
+.account-card,
+.add-account-dashed {
+  flex-shrink: 0;
+  width: 190px;
+  height: 200px;
+  border-radius: 12px;
+  background-color: var(--bg-surface);
+}
+
+/* Bank account card */
+.account-card {
+  border: 1px solid #e2e8f0;
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
+  transition: box-shadow 0.2s;
+}
+
+.account-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.account-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.account-info {
+  margin: 0.5rem 0 0.25rem;
+}
+
+.account-bank-name {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
+}
+
+.account-mask {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.account-balance {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin: 0.25rem 0;
+}
+
+.account-footer {
+  display: flex;
+  align-items: left;
+  justify-content: space-between;
+  gap: 0.375rem;
+  flex-direction: column;
+}
+
+.account-type {
+  font-size: 0.625rem;
+  color: var(--text-secondary);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding-left: 0;
+}
+
+/* Status pill badge */
+.status-pill {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  white-space: nowrap;
+  width: fit-content;
+}
+
+.status-active {
+  background-color: #dcfce7;
+  color: #3c7443;
+}
+
+.status-inactive {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+/* Dashed "Add Account" card */
+.add-account-dashed {
+  border: 1.5px dashed #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.add-account-dashed:hover {
+  border-color: var(--primary-blue);
+  background-color: var(--light-blue);
+}
+
+.add-icon-dashed {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  transition: color 0.2s;
+}
+
+.add-account-dashed:hover .add-icon-dashed {
+  color: var(--primary-blue);
+}
+
+.add-label-dashed {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0;
+  transition: color 0.2s;
+}
+
+.add-account-dashed:hover .add-label-dashed {
+  color: var(--primary-blue);
+}

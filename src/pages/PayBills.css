@@ -1,0 +1,174 @@
+.pay-bills-container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.pay-bills-header {
+  margin-bottom: 2rem;
+}
+
+.pay-bills-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.pay-bills-header p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.bills-balance-card {
+  background: linear-gradient(135deg, var(--dark-blue), var(--primary-blue));
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: #ffffff;
+  margin-bottom: 2rem;
+}
+
+.bills-balance-label {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bills-balance-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.bills-balance-sub {
+  font-size: 0.8125rem;
+  opacity: 0.75;
+}
+
+.bills-category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.bill-category-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.bill-category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: var(--primary-blue);
+}
+
+.bill-cat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.bill-cat-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.bill-cat-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.upcoming-bills h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.bill-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.bill-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  background-color: var(--light-blue);
+}
+
+.bill-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bill-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.bill-due {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.bill-due.overdue {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.bill-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.bill-amount {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.pay-now-btn {
+  padding: 0.35rem 0.875rem;
+  background-color: var(--primary-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.pay-now-btn:hover {
+  background-color: var(--dark-blue);
+}
+
+@media (min-width: 768px) {
+  .bills-category-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
