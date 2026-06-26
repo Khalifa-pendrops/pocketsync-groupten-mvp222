@@ -1,0 +1,999 @@
+openapi: 3.0.3
+info:
+  title: PocketSync API
+  description: |
+    Consolidated personal finance manager API for the Nigerian market.
+
+    **Production base URL:** `https://pocketsync.onrender.com`
+
+    ## Authentication
+    PocketSync uses **HttpOnly cookies** — not Bearer tokens. After `POST /api/v1/auth/login`,
+    the server sets `accessToken` and `refreshToken` cookies. All protected routes require
+    the browser/client to send cookies (`credentials: 'include'` in fetch, `withCredentials: true` in axios).
+
+    ## Amounts
+    All monetary values in API **requests and responses** are in **NGN (Naira)**.
+    Internally amounts are stored in kobo; the API converts for you.
+
+    ## Transaction amounts
+    - `type: "credit"` → positive `amount`
+    - `type: "debit"` → negative `amount`
+  version: 1.0.0
+  contact:
+    name: PocketSync Backend Team
+
+servers:
+  - url: https://pocketsync.onrender.com
+    description: Production (Render)
+  - url: http://localhost:5000
+    description: Local development
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: Institutions
+  - name: Accounts
+  - name: Transactions
+  - name: Dashboard
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: user@example.com
+              username: chike
+              password: SecurePass123
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: An account with this email already exists
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      description: Sets `accessToken` and `refreshToken` HttpOnly cookies on success.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: demo@pocketsync.ng
+              password: Demo@1234
+      responses:
+        '200':
+          description: Login successful — cookies set
+          headers:
+            Set-Cookie:
+              description: accessToken and refreshToken HttpOnly cookies
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid credentials
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      description: Invalidates refresh token and clears cookies.
+      operationId: logout
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      description: |
+        Uses `refreshToken` cookie (path-scoped to this endpoint).
+        Rotates both tokens on success.
+      operationId: refreshToken
+      responses:
+        '200':
+          description: Token refreshed — new cookies set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token refreshed
+        '401':
+          description: Missing or invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/institutions:
+    get:
+      tags: [Institutions]
+      summary: List linkable institutions
+      description: Banks/fintechs supported for **account linking** only.
+      operationId: getInstitutions
+      responses:
+        '200':
+          description: Institution list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstitutionsResponse'
+
+  /api/v1/accounts/link:
+    post:
+      tags: [Accounts]
+      summary: Link a bank account (mock OAuth)
+      operationId: linkAccount
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkAccountRequest'
+            example:
+              institution: GTBank
+              mockAccountRef: "1234567890"
+      responses:
+        '201':
+          description: Account linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkAccountResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Institution already linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/accounts:
+    get:
+      tags: [Accounts]
+      summary: List linked accounts
+      operationId: getAccounts
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Active linked accounts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/accounts/{accountId}:
+    delete:
+      tags: [Accounts]
+      summary: Disconnect (soft-delete) a linked account
+      operationId: disconnectAccount
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/accountId'
+      responses:
+        '200':
+          description: Account disconnected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: GTBank account disconnected successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/transactions:
+    get:
+      tags: [Transactions]
+      summary: List transactions
+      operationId: getTransactions
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+          description: Filter by linked account ID (must belong to user)
+        - name: category
+          in: query
+          schema:
+            $ref: '#/components/schemas/TransactionCategory'
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/TransactionType'
+        - name: fromDate
+          in: query
+          schema:
+            type: string
+            format: date
+          example: "2026-01-01"
+        - name: toDate
+          in: query
+          schema:
+            type: string
+            format: date
+          example: "2026-06-26"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 30
+            maximum: 30
+      responses:
+        '200':
+          description: Paginated transaction list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Account filter — account not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/transactions/transfer:
+    post:
+      tags: [Transactions]
+      summary: Internal transfer (between your linked accounts)
+      description: |
+        Moves money between two of the user's own linked accounts.
+        Creates paired debit + credit transactions with the same reference.
+      operationId: transferMoney
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InternalTransferRequest'
+            example:
+              fromAccountId: "6a3e576b28a32290927300a5"
+              toAccountId: "6a3e576b28a32290927300b6"
+              amount: 5000
+              description: Transfer to Access Bank savings
+      responses:
+        '201':
+          description: Transfer successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalTransferResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Account not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/transactions/interbank-transfer:
+    post:
+      tags: [Transactions]
+      summary: Interbank transfer (to external account)
+      description: |
+        Mock NIP transfer to any external Nigerian bank account.
+        `recipientBank` accepts **any valid bank name** (not limited to linkable institutions).
+        Debits source only; returns mock `nipReference`.
+      operationId: interbankTransfer
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterbankTransferRequest'
+            example:
+              fromAccountId: "6a3e576b28a32290927300c8"
+              recipientBank: UBA
+              recipientAccountNumber: "0123456789"
+              recipientName: khalifa bin zayed
+              amount: 10000
+              description: Payment for services
+      responses:
+        '201':
+          description: Interbank transfer successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterbankTransferResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/transactions/pay-bill:
+    post:
+      tags: [Transactions]
+      summary: Pay a bill
+      operationId: payBill
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayBillRequest'
+            example:
+              fromAccountId: "6a3e576b28a32290927300a5"
+              amount: 21500
+              billProvider: DSTV
+              customerReference: "1234567890"
+              description: DSTV Premium renewal
+      responses:
+        '201':
+          description: Bill payment successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayBillResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/transactions/{transactionId}:
+    get:
+      tags: [Transactions]
+      summary: Get single transaction
+      operationId: getTransactionById
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/transactionId'
+      responses:
+        '200':
+          description: Transaction detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/transactions/{transactionId}/category:
+    patch:
+      tags: [Transactions]
+      summary: Update transaction category
+      operationId: updateTransactionCategory
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/transactionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category]
+              properties:
+                category:
+                  $ref: '#/components/schemas/TransactionCategory'
+            example:
+              category: Food
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Category updated
+                  category:
+                    $ref: '#/components/schemas/TransactionCategory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/dashboard/summary:
+    get:
+      tags: [Dashboard]
+      summary: Dashboard summary
+      operationId: getDashboardSummary
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Aggregated financial summary (last 30 days)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/v1/dashboard/balance-trend:
+    get:
+      tags: [Dashboard]
+      summary: Balance trend (6 months)
+      operationId: getBalanceTrend
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Monthly net cash flow for charting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceTrendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: accessToken
+      description: HttpOnly cookie set by POST /api/v1/auth/login
+
+  parameters:
+    accountId:
+      name: accountId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: MongoDB ObjectId of linked account
+    transactionId:
+      name: transactionId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: MongoDB ObjectId of transaction
+
+  responses:
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Not authenticated or session expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorised — please log in
+    Forbidden:
+      description: Resource exists but not owned by user
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Forbidden
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
+          description: Present in development only
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: PocketSync API
+        db:
+          type: string
+          enum: [connected, disconnected]
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        password:
+          type: string
+          minLength: 8
+
+    RegisterResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        userId:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+
+    LinkableInstitution:
+      type: string
+      enum: [GTBank, Access Bank, Kuda, Opay, Moniepoint]
+
+    AccountType:
+      type: string
+      enum: [current, savings, wallet, business]
+
+    TransactionCategory:
+      type: string
+      enum: [Food, Transport, Bills, Entertainment, Savings, Transfer, Other]
+
+    TransactionType:
+      type: string
+      enum: [credit, debit]
+
+    BillProvider:
+      type: string
+      enum: [DSTV, GOTV, IKEDC, EKEDC, MTN, Airtel, Glo, 9mobile, LAWMA, Water Board]
+
+    LinkedAccount:
+      type: object
+      properties:
+        id:
+          type: string
+        institution:
+          $ref: '#/components/schemas/LinkableInstitution'
+        maskedAccountNumber:
+          type: string
+          example: "****4471"
+        balance:
+          type: number
+          description: Balance in NGN
+        currency:
+          type: string
+          example: NGN
+        accountType:
+          $ref: '#/components/schemas/AccountType'
+        linkedAt:
+          type: string
+          format: date-time
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+          format: date-time
+        description:
+          type: string
+        amount:
+          type: number
+          description: NGN — negative for debits, positive for credits
+        type:
+          $ref: '#/components/schemas/TransactionType'
+        category:
+          $ref: '#/components/schemas/TransactionCategory'
+        institution:
+          type: string
+        accountId:
+          type: string
+        reference:
+          type: string
+
+    InstitutionsResponse:
+      type: object
+      properties:
+        institutions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                $ref: '#/components/schemas/LinkableInstitution'
+
+    LinkAccountRequest:
+      type: object
+      required: [institution]
+      properties:
+        institution:
+          $ref: '#/components/schemas/LinkableInstitution'
+        mockAccountRef:
+          type: string
+          description: Optional — last 4 digits used for masked number
+
+    LinkAccountResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        account:
+          $ref: '#/components/schemas/LinkedAccount'
+
+    AccountsListResponse:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkedAccount'
+
+    TransactionsListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        pages:
+          type: integer
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+
+    InternalTransferRequest:
+      type: object
+      required: [fromAccountId, toAccountId, amount]
+      properties:
+        fromAccountId:
+          type: string
+        toAccountId:
+          type: string
+        amount:
+          type: number
+          minimum: 1
+          description: Amount in NGN
+        description:
+          type: string
+
+    InternalTransferResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        transfer:
+          type: object
+          properties:
+            reference:
+              type: string
+            amount:
+              type: number
+            fromAccount:
+              $ref: '#/components/schemas/LinkedAccount'
+            toAccount:
+              $ref: '#/components/schemas/LinkedAccount'
+            debitTransaction:
+              $ref: '#/components/schemas/Transaction'
+            creditTransaction:
+              $ref: '#/components/schemas/Transaction'
+
+    InterbankTransferRequest:
+      type: object
+      required: [fromAccountId, recipientBank, recipientAccountNumber, amount]
+      properties:
+        fromAccountId:
+          type: string
+        recipientBank:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Any Nigerian bank name (e.g. UBA, Zenith Bank, First Bank)
+        recipientAccountNumber:
+          type: string
+          pattern: '^\\d{10}$'
+        recipientName:
+          type: string
+        amount:
+          type: number
+          minimum: 1
+        description:
+          type: string
+
+    InterbankTransferResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        transfer:
+          type: object
+          properties:
+            reference:
+              type: string
+            nipReference:
+              type: string
+            amount:
+              type: number
+            status:
+              type: string
+              example: completed
+            fromAccount:
+              $ref: '#/components/schemas/LinkedAccount'
+            recipient:
+              type: object
+              properties:
+                bank:
+                  type: string
+                accountNumber:
+                  type: string
+                  example: "****6789"
+                name:
+                  type: string
+            transaction:
+              $ref: '#/components/schemas/Transaction'
+
+    PayBillRequest:
+      type: object
+      required: [fromAccountId, amount, billProvider]
+      properties:
+        fromAccountId:
+          type: string
+        amount:
+          type: number
+          minimum: 1
+        billProvider:
+          $ref: '#/components/schemas/BillProvider'
+        customerReference:
+          type: string
+          description: Meter number, smartcard ID, phone number, etc.
+        description:
+          type: string
+
+    PayBillResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        payment:
+          type: object
+          properties:
+            reference:
+              type: string
+            amount:
+              type: number
+            billProvider:
+              $ref: '#/components/schemas/BillProvider'
+            account:
+              $ref: '#/components/schemas/LinkedAccount'
+            transaction:
+              $ref: '#/components/schemas/Transaction'
+
+    DashboardSummaryResponse:
+      type: object
+      properties:
+        totalBalance:
+          type: number
+        currency:
+          type: string
+          example: NGN
+        monthlyIncome:
+          type: number
+        monthlyExpense:
+          type: number
+        netCashFlow:
+          type: number
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkedAccount'
+        recentTransactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+        expenseBreakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                $ref: '#/components/schemas/TransactionCategory'
+              amount:
+                type: number
+
+    BalanceTrendResponse:
+      type: object
+      properties:
+        labels:
+          type: array
+          items:
+            type: string
+          example: [Jan, Feb, Mar, Apr, May, Jun]
+        data:
+          type: array
+          items:
+            type: number
+          description: Net cash flow per month in NGN
