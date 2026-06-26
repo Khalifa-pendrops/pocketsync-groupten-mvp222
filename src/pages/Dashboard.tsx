@@ -22,7 +22,9 @@ const Dashboard = () => {
 
       {/* Quick Actions */}
       <section className="dashboard-section">
-        <h2>Quick Actions</h2>
+        <div className="section-header">
+          <h2>Quick Actions</h2>
+        </div>
         <div className="quick-actions-grid">
           <div className="action-card">
             <div className="action-icon">🧾</div>
@@ -128,29 +130,43 @@ const Dashboard = () => {
             <div className="section-header">
               <h2>Spending Overview</h2>
               <select className="date-dropdown">
-                <option>This Month</option>
+                <option value="">This Month</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
               </select>
             </div>
             <div className="spending-card">
               <div className="chart-container">
-                <ResponsiveContainer width="50%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={spendingData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={65}
-                      paddingAngle={0}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {spendingData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="chart-area">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={spendingData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={35}
+                        outerRadius={55}
+                        paddingAngle={0}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {spendingData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
                 <div className="chart-legend">
                   {spendingData.map((item, index) => (
                     <div key={index} className="legend-item">

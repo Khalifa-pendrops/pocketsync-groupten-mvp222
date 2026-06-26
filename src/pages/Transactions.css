@@ -98,7 +98,7 @@
   align-items: center;
   padding: 1rem;
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  border: 1px solid #C3C3C3;
   border-radius: 12px;
   gap: 1rem;
   transition: box-shadow 0.2s;

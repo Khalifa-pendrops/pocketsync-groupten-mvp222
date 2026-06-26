@@ -1,3 +1,5 @@
+/* SF Pro loads automatically on Apple devices via -apple-system.
+   Inter is kept as a web fallback for Windows/Android. */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
@@ -42,8 +44,8 @@
   --bg-surface: #FFFFFF;
   --border-color: hsl(0deg 0% 90%);
 
-  /* Typography */
-  --font-family-base: 'Inter', sans-serif;
+  /* Typography — SF Pro on Apple, Inter on Windows/Android */
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
 
   /* Spacing scale */
   --var-0: 0px;
@@ -93,6 +95,7 @@ html, body {
   font-family: var(--font-family-base);
   color: var(--text-primary);
   background-color: var(--bg-main);
+  letter-spacing: 0.72px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

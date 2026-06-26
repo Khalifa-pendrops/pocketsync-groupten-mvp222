@@ -45,12 +45,14 @@ function AccountCard({ account }: AccountCardProps) {
 
   return (
     <div className="account-card">
-      <div className="account-logo" style={{ backgroundColor: color }}>
-        <span>{initial}</span>
-      </div>
-      <div className="account-info">
-        <p className="account-bank-name">{account.bankName}</p>
-        <p className="account-mask">{account.maskAccount}</p>
+      <div className="account-card-top">
+        <div className="account-logo" style={{ backgroundColor: color }}>
+          <span>{initial}</span>
+        </div>
+        <div className="account-info">
+          <p className="account-bank-name">{account.bankName}</p>
+          <p className="account-mask">{account.maskAccount}</p>
+        </div>
       </div>
       <p className="account-balance">{formatCurrency(account.balance)}</p>
       <div className="account-footer">
@@ -75,15 +77,17 @@ function AddAccountCard() {
 export default function ConnectedAccounts() {
   return (
     <section className="dashboard-section">
-      <div className="section-header">
-        <h2>Connected Accounts</h2>
-        <a href="#" className="view-all">View all</a>
-      </div>
-      <div className="accounts-row">
-        {mockAccounts.map((acc) => (
-          <AccountCard key={acc.id} account={acc} />
-        ))}
-        <AddAccountCard />
+      <div className="accounts-inner">
+        <div className="section-header">
+          <h2>Connected Accounts</h2>
+          <a href="#" className="view-all">View all</a>
+        </div>
+        <div className="accounts-row">
+          {mockAccounts.map((acc) => (
+            <AccountCard key={acc.id} account={acc} />
+          ))}
+          <AddAccountCard />
+        </div>
       </div>
     </section>
   );
