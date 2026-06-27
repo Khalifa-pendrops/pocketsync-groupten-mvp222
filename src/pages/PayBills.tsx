@@ -1,31 +1,149 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ApiError } from '../api/errors';
+import { BILL_CATALOG, BILL_CATEGORY_SUMMARY, type BillCatalogItem } from '../constants/bills';
+import { accountService } from '../services/accountService';
+import { billService } from '../services/billService';
+import type { BankAccount } from '../types';
+import { formatAccountType, formatNgn } from '../utils/format';
 import './PayBills.css';
-import electricitySvg from '../assets/icons/electricity.svg';
-import internetSvg from '../assets/icons/internet.svg';
-import airtimeSvg from '../assets/icons/airtime.svg';
-import subscriptionSvg from '../assets/icons/subscription.svg';
+import lightningSvg from '../assets/icons/lightning.svg';
 import transferSvg from '../assets/icons/transfer.svg';
-import { budgetService } from '../services';
-import type { BillCategory, Bill } from '../types';
+
+function BillIcon({ icon }: { icon: BillCatalogItem['icon'] }) {
+  if (icon === 'electricity') {
+    return <img src={lightningSvg} alt="" width="20" height="20" />;
+  }
+  if (icon === 'airtime') {
+    return '📱';
+  }
+  if (icon === 'tv') {
+    return '📺';
+  }
+  return '🌐';
+}
+
+function CategoryIcon({ icon }: { icon: 'electricity' | 'airtime' | 'tv' | 'internet' }) {
+  if (icon === 'electricity') {
+    return <img src={lightningSvg} alt="" width="24" height="24" />;
+  }
+  if (icon === 'airtime') {
+    return '📱';
+  }
+  if (icon === 'tv') {
+    return '📺';
+  }
+  return '🌐';
+}
 
 const PayBills = () => {
-  const [categories, setCategories] = useState<BillCategory[]>([]);
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [catLoading, setCatLoading] = useState(true);
-  const [billsLoading, setBillsLoading] = useState(true);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [paidBillIds, setPaidBillIds] = useState<Set<string>>(new Set());
+  const [selectedBill, setSelectedBill] = useState<BillCatalogItem | null>(null);
+  const [fromAccountId, setFromAccountId] = useState('');
+  const [customerReference, setCustomerReference] = useState('');
+  const [paying, setPaying] = useState(false);
 
-  useEffect(() => {
-    budgetService.getCategories().then((data) => {
-      setCategories(data);
-      setCatLoading(false);
-    });
-    budgetService.getBills().then((data) => {
-      setBills(data);
-      setBillsLoading(false);
-    });
+  const loadAccounts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await accountService.getAll();
+      setAccounts(data);
+      setFromAccountId((current) => {
+        if (current && data.some((account) => account.id === current)) {
+          return current;
+        }
+
+        const preferred =
+          data.find((account) => account.accountType === 'wallet') ?? data[0];
+        return preferred?.id ?? '';
+      });
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Failed to load accounts.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const totalDue = bills.reduce((s, b) => s + b.amount, 0);
+  useEffect(() => {
+    loadAccounts();
+  }, [loadAccounts]);
+
+  const walletBalance = useMemo(
+    () => accounts.reduce((sum, account) => sum + account.balance, 0),
+    [accounts],
+  );
+
+  const upcomingBills = useMemo(
+    () => BILL_CATALOG.filter((bill) => !paidBillIds.has(bill.id)),
+    [paidBillIds],
+  );
+
+  const selectedAccount = accounts.find((account) => account.id === fromAccountId);
+
+  const canPaySelected =
+    selectedBill &&
+    selectedAccount &&
+    selectedAccount.balance >= selectedBill.amount;
+
+  function openPayModal(bill: BillCatalogItem) {
+    setSelectedBill(bill);
+    setCustomerReference('');
+    setMessage(null);
+    setError(null);
+
+    const affordable =
+      accounts.find((account) => account.balance >= bill.amount) ??
+      accounts.find((account) => account.accountType === 'wallet') ??
+      accounts[0];
+
+    if (affordable) {
+      setFromAccountId(affordable.id);
+    }
+  }
+
+  function closePayModal() {
+    setSelectedBill(null);
+    setCustomerReference('');
+    setPaying(false);
+  }
+
+  async function handlePayBill() {
+    if (!selectedBill || !fromAccountId) {
+      return;
+    }
+
+    setPaying(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const response = await billService.pay({
+        fromAccountId,
+        amount: selectedBill.amount,
+        billProvider: selectedBill.billProvider,
+        customerReference: customerReference.trim() || undefined,
+        description: `${selectedBill.name} — ${selectedBill.billProvider}`,
+      });
+
+      setMessage(
+        `${response.message} Ref: ${response.payment.reference} (${formatNgn(response.payment.amount)})`,
+      );
+      setPaidBillIds((current) => new Set(current).add(selectedBill.id));
+      closePayModal();
+      await loadAccounts();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Bill payment failed.';
+      setError(msg);
+    } finally {
+      setPaying(false);
+    }
+  }
 
   return (
     <div className="pay-bills-container">
@@ -34,31 +152,38 @@ const PayBills = () => {
         <p>Settle your bills directly from PocketSync.</p>
       </header>
 
+      {message && <div className="pb-banner pb-banner--success">{message}</div>}
+      {error && !selectedBill && (
+        <div className="pb-banner pb-banner--error">
+          <p>{error}</p>
+          <button type="button" className="pb-retry-btn" onClick={loadAccounts}>
+            Try again
+          </button>
+        </div>
+      )}
+
       <div className="bills-balance-card">
-        <p className="bills-balance-label">Wallet Balance</p>
-        <p className="bills-balance-amount">₦{totalDue.toLocaleString()}.00</p>
-        <p className="bills-balance-sub">Sufficient for all upcoming bills</p>
+        <p className="bills-balance-label">Total linked balance</p>
+        <p className="bills-balance-amount">
+          {loading ? '…' : formatNgn(walletBalance)}
+        </p>
+        <p className="bills-balance-sub">
+          {accounts.length === 0
+            ? 'Link an account to pay bills'
+            : `${accounts.length} connected account${accounts.length === 1 ? '' : 's'}`}
+        </p>
       </div>
 
       <div className="bills-category-grid">
-        {catLoading ? (
-          <p className="state-message loading" style={{ gridColumn: '1 / -1' }}>Loading categories...</p>
-        ) : categories.map((cat) => (
+        {BILL_CATEGORY_SUMMARY.map((cat) => (
           <div key={cat.name} className="bill-category-card">
             <div className="bill-cat-icon">
-              {cat.name === 'Electricity' ? (
-                <img src={electricitySvg} alt="" width="24" height="24" />
-              ) : cat.name === 'Internet' ? (
-                <img src={internetSvg} alt="" width="50" height="50" />
-              ) : cat.name === 'Airtime' ? (
-                <img src={airtimeSvg} alt="" width="50" height="50" />
-              ) : cat.name === 'TV Subscription' ? (
-                <img src={subscriptionSvg} alt="" width="24" height="24" />
-              ) : (
-                cat.icon
-              )}
+              <CategoryIcon icon={cat.icon} />
             </div>
             <p className="bill-cat-name">{cat.name}</p>
+            <p className="bill-cat-count">
+              {cat.count} bill{cat.count === 1 ? '' : 's'}
+            </p>
           </div>
         ))}
         <div className="bill-category-card">
@@ -71,34 +196,108 @@ const PayBills = () => {
 
       <section className="upcoming-bills">
         <h2>Upcoming Bills</h2>
-        {billsLoading ? (
-          <p className="state-message loading">Loading bills...</p>
-        ) : bills.length === 0 ? (
-          <p className="state-message empty">No upcoming bills</p>
-        ) : bills.map((bill, i) => (
-          <div key={i} className="bill-item">
+
+        {loading && <p className="pb-status">Loading accounts…</p>}
+
+        {!loading && accounts.length === 0 && (
+          <p className="pb-status">Link an account before paying bills.</p>
+        )}
+
+        {!loading && upcomingBills.length === 0 && (
+          <p className="pb-status">All catalog bills paid for this session.</p>
+        )}
+
+        {upcomingBills.map((bill) => (
+          <div key={bill.id} className="bill-item">
             <div className="bill-icon">
-              {bill.category === 'Electricity' ? (
-                <img src={electricitySvg} alt="" width="20" height="20" />
-              ) : bill.category === 'Airtime' ? (
-                <img src={airtimeSvg} alt="" width="34" height="34" />
-              ) : (
-                <img src={subscriptionSvg} alt="" width="20" height="20" />
-              )}
+              <BillIcon icon={bill.icon} />
             </div>
             <div className="bill-info">
               <p className="bill-name">{bill.name}</p>
               <p className={`bill-due${bill.overdue ? ' overdue' : ''}`}>
-                {bill.overdue ? '⚠ Overdue — ' : 'Due '}{bill.due}
+                {bill.overdue ? '⚠ Overdue — ' : 'Due '}
+                {bill.due}
               </p>
             </div>
             <div className="bill-right">
-              <p className="bill-amount">₦{bill.amount.toLocaleString()}</p>
-              <button className="pay-now-btn">Pay Now</button>
+              <p className="bill-amount">{formatNgn(bill.amount)}</p>
+              <button
+                type="button"
+                className="pay-now-btn"
+                onClick={() => openPayModal(bill)}
+                disabled={accounts.length === 0}
+              >
+                Pay Now
+              </button>
             </div>
           </div>
         ))}
       </section>
+
+      {selectedBill && (
+        <div className="pb-modal-backdrop" onClick={closePayModal}>
+          <div
+            className="pb-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-labelledby="pay-bill-title"
+          >
+            <h3 id="pay-bill-title">Pay {selectedBill.name}</h3>
+            <p className="pb-modal-sub">
+              {selectedBill.billProvider} · {formatNgn(selectedBill.amount)}
+            </p>
+
+            {error && <div className="pb-banner pb-banner--error">{error}</div>}
+
+            <label className="pb-field">
+              <span>Pay from</span>
+              <select
+                value={fromAccountId}
+                onChange={(event) => setFromAccountId(event.target.value)}
+              >
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.bankName} ({account.maskAccount}) — {formatNgn(account.balance)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="pb-field">
+              <span>Meter / customer reference (optional)</span>
+              <input
+                type="text"
+                value={customerReference}
+                onChange={(event) => setCustomerReference(event.target.value)}
+                placeholder="e.g. 1234567890"
+              />
+            </label>
+
+            {selectedAccount && (
+              <p className="pb-modal-hint">
+                {formatAccountType(selectedAccount.accountType)} ·{' '}
+                {selectedAccount.balance < selectedBill.amount
+                  ? 'Insufficient balance for this payment'
+                  : 'Ready to pay'}
+              </p>
+            )}
+
+            <div className="pb-modal-actions">
+              <button type="button" className="pb-cancel-btn" onClick={closePayModal}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="pay-now-btn"
+                onClick={handlePayBill}
+                disabled={paying || !canPaySelected}
+              >
+                {paying ? 'Processing…' : `Pay ${formatNgn(selectedBill.amount)}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

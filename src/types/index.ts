@@ -23,12 +23,22 @@ export interface BankAccount {
 }
 
 export interface Transaction {
-  id: number;
+  id: string;
   name: string;
   desc: string;
   amount: number;
   date: string;
   type: string;
+}
+
+export interface TransactionRow {
+  id: string;
+  description: string;
+  institution: string;
+  category: string;
+  amount: number;
+  type: 'credit' | 'debit';
+  date: string;
 }
 
 export interface SpendingCategory {
@@ -64,21 +74,4 @@ export interface BillCategory {
   count: number;
 }
 
-export interface AuthCredentials {
-  email: string;
-  password: string;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-  };
-}
-
-export interface ApiResponse<T> {
-  status: string;
-  data: T;
-  message?: string;
-}
+// UI view-model types live here. Backend-canonical shapes are in src/api/types.ts.

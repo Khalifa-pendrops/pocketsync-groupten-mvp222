@@ -1,4 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ApiError } from '../api/errors';
+import {
+  INSTITUTION_META,
+  type InstitutionCategory,
+  type InstitutionMeta,
+} from '../constants/institutions';
+import { enrichInstitution } from '../lib/institutions';
+import { accountService } from '../services/accountService';
+import { institutionService } from '../services/institutionService';
+import type { BankAccount } from '../types';
+import { formatAccountType, formatNgn } from '../utils/format';
 import './LinkAccounts.css';
 import shieldCheckSvg from '../assets/icons/shield-check.svg';
 import buildingSvg from '../assets/icons/building.svg';
@@ -6,75 +17,142 @@ import linkSvg from '../assets/icons/link.svg';
 import shieldLockSvg from '../assets/icons/shield-lock.svg';
 import checkCircleSvg from '../assets/icons/check-circle.svg';
 import lockSvg from '../assets/icons/lock.svg';
-import SecurityConsentModal from '../components/modals/SecurityConsentModal';
-import { institutionService } from '../services';
-import type { Institution } from '../types';
 
-type Category = 'All' | 'Banks' | 'Fintechs' | 'Microfinance Banks';
-
-const TABS: Category[] = ['All', 'Banks', 'Fintechs', 'Microfinance Banks'];
+type Tab = 'All' | InstitutionCategory;
+const TABS: Tab[] = ['All', 'Banks', 'Fintechs', 'Microfinance Banks'];
 
 interface BankLogoProps {
-  src?: string;
-  initial: string;
-  color: string;
+  meta: InstitutionMeta;
+  name: string;
   size?: number;
 }
-function BankLogo({ src, initial, color, size = 48 }: BankLogoProps) {
-  return src ? (
+
+function BankLogo({ meta, name, size = 48 }: BankLogoProps) {
+  return meta.logo ? (
     <img
-      src={src}
-      alt={initial}
+      src={meta.logo}
+      alt={name}
       width={size}
       height={size}
       style={{ objectFit: 'contain', borderRadius: 8 }}
-      onError={(e) => {
-        (e.currentTarget as HTMLImageElement).style.display = 'none';
-      }}
     />
   ) : (
     <div
       className="bank-logo-fallback"
-      style={{ width: size, height: size, backgroundColor: color }}
+      style={{ width: size, height: size, backgroundColor: meta.color }}
     >
-      {initial}
+      {meta.initial}
     </div>
   );
 }
 
 const LinkAccounts = () => {
-  const [activeTab, setActiveTab] = useState<Category>('All');
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [activeTab, setActiveTab] = useState<Tab>('All');
+  const [search, setSearch] = useState('');
+  const [institutions, setInstitutions] = useState<ReturnType<typeof enrichInstitution>[]>([]);
+  const [linkedAccounts, setLinkedAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [linkingInstitution, setLinkingInstitution] = useState<string | null>(null);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    institutionService.getAll().then((data) => {
-      setInstitutions(data);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [apiInstitutions, accounts] = await Promise.all([
+        institutionService.getAll(),
+        accountService.getAll(),
+      ]);
+
+      setInstitutions(apiInstitutions.map(enrichInstitution));
+      setLinkedAccounts(accounts);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Failed to load accounts.';
+      setError(msg);
+    } finally {
       setLoading(false);
-    });
+    }
   }, []);
 
-  const filtered =
-    activeTab === 'All'
-      ? institutions
-      : institutions.filter((i) => i.category === activeTab);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const linkedByInstitution = useMemo(() => {
+    const map = new Map<string, BankAccount>();
+    linkedAccounts.forEach((account) => map.set(account.bankName, account));
+    return map;
+  }, [linkedAccounts]);
+
+  const filteredInstitutions = useMemo(() => {
+    const term = search.trim().toLowerCase();
+
+    return institutions.filter((institution) => {
+      const matchesTab = activeTab === 'All' || institution.category === activeTab;
+      const matchesSearch =
+        !term ||
+        institution.name.toLowerCase().includes(term) ||
+        institution.category.toLowerCase().includes(term);
+
+      return matchesTab && matchesSearch;
+    });
+  }, [institutions, activeTab, search]);
+
+  async function handleLink(institutionName: string) {
+    setLinkingInstitution(institutionName);
+    setError(null);
+    setMessage(null);
+
+    try {
+      await accountService.link(institutionName);
+      setMessage(`${institutionName} linked successfully.`);
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Failed to link account.';
+      setError(msg);
+    } finally {
+      setLinkingInstitution(null);
+    }
+  }
+
+  async function handleDisconnect(account: BankAccount) {
+    const confirmed = window.confirm(`Disconnect ${account.bankName} (${account.maskAccount})?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setDisconnectingId(account.id);
+    setError(null);
+    setMessage(null);
+
+    try {
+      await accountService.disconnect(account.id);
+      setMessage(`${account.bankName} disconnected.`);
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Failed to disconnect account.';
+      setError(msg);
+    } finally {
+      setDisconnectingId(null);
+    }
+  }
 
   return (
     <div className="la-container">
-
-      {/* Search bar - top */}
       <div className="la-search">
-        <span className="la-search-icon" aria-hidden="true">🔍</span>
+        <span className="la-search-icon">🔍</span>
         <input
           type="text"
           className="la-search-input"
           placeholder="Search for your bank or fintech"
-          aria-label="Search banks and fintechs"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
         />
       </div>
 
-      {/* Page title row */}
       <div className="la-title-row">
         <div>
           <h1 className="la-title">Connect an Account</h1>
@@ -93,11 +171,57 @@ const LinkAccounts = () => {
         </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="la-tabs" role="tablist" aria-label="Institution categories">
+      {message && <div className="la-banner la-banner--success">{message}</div>}
+      {error && (
+        <div className="la-banner la-banner--error">
+          <p>{error}</p>
+          <button type="button" className="la-retry-btn" onClick={loadData}>
+            Try again
+          </button>
+        </div>
+      )}
+
+      {linkedAccounts.length > 0 && (
+        <section className="la-section">
+          <h2 className="la-section-title">Your connected accounts</h2>
+          <div className="la-connected-list">
+            {linkedAccounts.map((account) => {
+              const meta = INSTITUTION_META[account.bankName] ?? {
+                color: '#6b7280',
+                initial: account.bankName.charAt(0),
+              };
+
+              return (
+                <div key={account.id} className="la-connected-card">
+                  <div className="la-card-header">
+                    <BankLogo meta={meta} name={account.bankName} size={40} />
+                    <div className="la-card-info">
+                      <p className="la-card-name">{account.bankName}</p>
+                      <p className="la-card-masked">{account.maskAccount}</p>
+                    </div>
+                  </div>
+                  <p className="la-connected-balance">{formatNgn(account.balance)}</p>
+                  <p className="la-connected-type">{formatAccountType(account.accountType)}</p>
+                  <button
+                    type="button"
+                    className="la-remove-btn"
+                    onClick={() => handleDisconnect(account)}
+                    disabled={disconnectingId === account.id}
+                  >
+                    {disconnectingId === account.id ? 'Removing…' : 'Disconnect'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      <div className="la-tabs">
         {TABS.map((tab) => (
           <button
             key={tab}
+            type="button"
             className={`la-tab${activeTab === tab ? ' la-tab--active' : ''}`}
             onClick={() => setActiveTab(tab)}
             role="tab"
@@ -109,57 +233,65 @@ const LinkAccounts = () => {
         ))}
       </div>
 
-{/* Grid section */}
       <section className="la-section">
-        <h2 className="la-section-title">Accounts linked to BVN</h2>
-        {loading ? (
-          <p className="state-message loading">Loading institutions...</p>
-        ) : (
-          <div className="la-grid">
-            {filtered.map((inst) => (
-              <div key={inst.id} className="la-card">
+        <h2 className="la-section-title">Supported institutions</h2>
+
+        {loading && <p className="la-status">Loading institutions…</p>}
+
+        {!loading && filteredInstitutions.length === 0 && (
+          <p className="la-status">No institutions match your search.</p>
+        )}
+
+        <div className="la-grid">
+          {filteredInstitutions.map((institution) => {
+            const linked = linkedByInstitution.get(institution.name);
+            const isLinking = linkingInstitution === institution.name;
+
+            return (
+              <div key={institution.id} className="la-card">
                 <div className="la-card-header">
-                  <BankLogo
-                    src={inst.logoSrc}
-                    initial={inst.initial}
-                    color={inst.logoColor}
-                    size={48}
-                  />
+                  <BankLogo meta={institution.meta} name={institution.name} size={48} />
                   <div className="la-card-info">
-                    <p className="la-card-name">{inst.name}</p>
-                    <p className="la-card-masked">{inst.masked}</p>
+                    <p className="la-card-name">{institution.name}</p>
+                    <p className="la-card-masked">
+                      {linked ? linked.maskAccount : institution.category}
+                    </p>
                   </div>
                 </div>
-                <button
-                  className="la-add-btn"
-                  onClick={() => setSelectedInstitution(inst)}
-                  aria-label={`Add ${inst.name} account`}
-                >
-                  Add Account
-                </button>
+                {linked ? (
+                  <button type="button" className="la-add-btn la-add-btn--linked" disabled>
+                    Connected
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="la-add-btn"
+                    onClick={() => handleLink(institution.name)}
+                    disabled={isLinking}
+                  >
+                    {isLinking ? 'Linking…' : 'Add Account'}
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </section>
 
-      {/* Can't find your bank */}
       <div className="la-manual-bar">
         <div className="la-manual-left">
           <span className="la-manual-icon">
             <img src={buildingSvg} alt="" width="24" height="24" />
           </span>
           <div>
-            <p className="la-manual-title">Can't find your bank?</p>
-            <p className="la-manual-desc">Connect using your account details</p>
+            <p className="la-manual-title">Can&apos;t find your bank?</p>
+            <p className="la-manual-desc">
+              Only GTBank, Access Bank, Kuda, Opay, and Moniepoint are supported in this MVP.
+            </p>
           </div>
         </div>
-        <button className="la-manual-btn">
-          Enter Details Manually <span aria-hidden="true">›</span>
-        </button>
       </div>
 
-      {/* How it works */}
       <section className="la-section la-how-section">
         <h2 className="la-section-title">How it works</h2>
         <div className="la-steps">
@@ -169,9 +301,7 @@ const LinkAccounts = () => {
             </div>
             <div className="la-step-body">
               <p className="la-step-num">1. Select your bank</p>
-              <p className="la-step-desc">
-                Choose your bank or fintech from the list above.
-              </p>
+              <p className="la-step-desc">Choose your bank or fintech from the list above.</p>
             </div>
           </div>
           <div className="la-step">
@@ -181,7 +311,7 @@ const LinkAccounts = () => {
             <div className="la-step-body">
               <p className="la-step-num">2. Secure login</p>
               <p className="la-step-desc">
-                You'll be redirected to your bank to securely log in.
+                You&apos;ll be redirected to your bank to securely log in.
               </p>
             </div>
           </div>
@@ -191,29 +321,18 @@ const LinkAccounts = () => {
             </div>
             <div className="la-step-body">
               <p className="la-step-num">3. Connection successful</p>
-              <p className="la-step-desc">
-                Your account will be connected and ready to use.
-              </p>
+              <p className="la-step-desc">Your account will be connected and ready to use.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Privacy note */}
       <div className="la-privacy">
         <span className="la-privacy-icon">
           <img src={lockSvg} alt="" width="16" height="16" />
         </span>
         We never store your login details. Your data is encrypted and secure.
       </div>
-
-      <SecurityConsentModal
-        isOpen={selectedInstitution !== null}
-        onClose={() => setSelectedInstitution(null)}
-        onProceed={() => {
-          setSelectedInstitution(null);
-        }}
-      />
     </div>
   );
 };

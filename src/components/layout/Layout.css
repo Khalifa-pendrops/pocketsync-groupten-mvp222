@@ -63,15 +63,16 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  padding: 0.25rem;
-  margin: -0.25rem;
-  transition: background-color 0.15s;
 }
 
-.profile-section:hover {
-  background-color: var(--grey-20);
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
 }
 
 .profile-avatar {

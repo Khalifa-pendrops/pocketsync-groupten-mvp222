@@ -244,8 +244,107 @@
   transition: color 0.15s;
 }
 
-.la-add-btn:hover {
-  color: var(--purple--60);
+.la-add-btn:hover:not(:disabled) {
+  background-color: var(--purple--60);
+}
+
+.la-add-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.la-add-btn--linked {
+  background-color: var(--grey-60);
+  color: var(--text-primary);
+}
+
+.la-add-btn--linked:hover {
+  background-color: var(--grey-60);
+}
+
+.la-status {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.la-banner {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.la-banner--success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+.la-banner--error {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+}
+
+.la-banner--error p {
+  margin: 0 0 0.5rem;
+}
+
+.la-retry-btn {
+  border: none;
+  background: none;
+  color: var(--primary-blue);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.875rem;
+}
+
+.la-connected-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.la-connected-card {
+  background-color: var(--bg-surface);
+  border: 1px solid #C3C3C3;
+  border-radius: var(--radius-xl);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.la-connected-balance {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.la-connected-type {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.la-remove-btn {
+  margin-top: 0.25rem;
+  width: 100%;
+  padding: 0.45rem 0;
+  background: none;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.la-remove-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Can't find your bank bar */

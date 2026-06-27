@@ -31,6 +31,14 @@ export default defineConfig({
     compressionPlugin('gzip', '.gz'),
     compressionPlugin('brotliCompress', '.br'),
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     sourcemap: false,
     chunkSizeWarningLimit: 500,

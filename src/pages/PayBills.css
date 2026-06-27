@@ -175,8 +175,117 @@
   transition: background-color 0.2s;
 }
 
-.pay-now-btn:hover {
+.pay-now-btn:hover:not(:disabled) {
   background-color: var(--dark-blue);
+}
+
+.pay-now-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pb-status {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.pb-banner {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.pb-banner--success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+.pb-banner--error {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+}
+
+.pb-banner--error p {
+  margin: 0 0 0.5rem;
+}
+
+.pb-retry-btn,
+.pb-cancel-btn {
+  border: none;
+  background: none;
+  color: var(--primary-blue);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.pb-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.pb-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.pb-modal h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
+}
+
+.pb-modal-sub {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0 0 1rem;
+}
+
+.pb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.pb-field select,
+.pb-field input {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--grey-40);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-family: var(--font-family-base);
+}
+
+.pb-modal-hint {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin: 0 0 1rem;
+}
+
+.pb-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.pb-cancel-btn {
+  padding: 0.35rem 0.5rem;
 }
 
 @media (min-width: 768px) {

@@ -1,97 +1,228 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ApiError } from '../api/errors';
+import type { TransactionRow } from '../types';
+import { transactionService, type TransactionQuery } from '../services/transactionService';
+import { formatSignedNgn, formatTransactionDate } from '../utils/format';
 import './Transactions.css';
 import lightningSvg from '../assets/icons/lightning.svg';
-import transferSvg from '../assets/icons/transfer.svg';
-import { transactionService } from '../services';
-import type { Transaction } from '../types';
 
-const filters = ['All', 'Income', 'Expense', 'Transfer', 'Bills', 'Airtime'];
+const FILTERS = ['All', 'Income', 'Expense', 'Transfer', 'Bills', 'Airtime'] as const;
+type FilterLabel = (typeof FILTERS)[number];
 
-const getTxIcon = (type: string) => {
-  switch (type) {
-    case 'bills':
-      return <img src={lightningSvg} alt="" width="16" height="16" />;
-    case 'transfer':
-      return <img src={transferSvg} alt="" width="16" height="16" />;
-    case 'receive':
-      return '↙';
-    case 'airtime':
-      return '📱';
+const AIRTIME_PATTERN = /airtime|mtn|glo|airtel|data bundle|9mobile/i;
+
+function filterToQuery(filter: FilterLabel): TransactionQuery {
+  switch (filter) {
+    case 'Income':
+      return { type: 'credit' };
+    case 'Expense':
+      return { type: 'debit' };
+    case 'Transfer':
+      return { category: 'Transfer' };
+    case 'Bills':
+      return { category: 'Bills' };
+    case 'Airtime':
+      return { type: 'debit' };
     default:
-      return '💳';
+      return {};
   }
-};
+}
+
+function badgeClass(tx: TransactionRow): string {
+  if (tx.type === 'credit') {
+    return 'receive';
+  }
+  if (tx.category === 'Bills') {
+    return 'bills';
+  }
+  if (tx.category === 'Transfer') {
+    return 'transfer';
+  }
+  if (AIRTIME_PATTERN.test(tx.description)) {
+    return 'airtime';
+  }
+  return 'transfer';
+}
+
+function matchesAirtime(tx: TransactionRow): boolean {
+  return AIRTIME_PATTERN.test(tx.description) || tx.category === 'Bills' && /mtn|glo|data/i.test(tx.description);
+}
+
+function matchesSearch(tx: TransactionRow, search: string): boolean {
+  const term = search.trim().toLowerCase();
+  if (!term) {
+    return true;
+  }
+
+  return (
+    tx.description.toLowerCase().includes(term) ||
+    tx.institution.toLowerCase().includes(term) ||
+    tx.category.toLowerCase().includes(term)
+  );
+}
 
 const Transactions = () => {
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [activeFilter, setActiveFilter] = useState<FilterLabel>('All');
+  const [search, setSearch] = useState('');
+  const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPage = useCallback(
+    async (pageNum: number, filter: FilterLabel, append: boolean) => {
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+        setError(null);
+      }
+
+      try {
+        const result = await transactionService.getPage({
+          ...filterToQuery(filter),
+          page: pageNum,
+          limit: 30,
+        });
+
+        setPage(result.page);
+        setPages(result.pages);
+        setTotal(result.total);
+        setTransactions((current) =>
+          append ? [...current, ...result.transactions] : result.transactions,
+        );
+      } catch (err) {
+        const message =
+          err instanceof ApiError ? err.message : 'Failed to load transactions.';
+        setError(message);
+        if (!append) {
+          setTransactions([]);
+        }
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    transactionService.getAll().then((data) => {
-      setAllTransactions(data);
-      setLoading(false);
-    });
-  }, []);
+    fetchPage(1, activeFilter, false);
+  }, [activeFilter, fetchPage]);
 
-  const filtered = activeFilter === 'All'
-    ? allTransactions
-    : allTransactions.filter((t) => t.type.toLowerCase() === activeFilter.toLowerCase());
+  const visibleTransactions = useMemo(() => {
+    let rows = transactions;
+
+    if (activeFilter === 'Airtime') {
+      rows = rows.filter(matchesAirtime);
+    }
+
+    return rows.filter((tx) => matchesSearch(tx, search));
+  }, [transactions, activeFilter, search]);
+
+  function handleFilterChange(filter: FilterLabel) {
+    setActiveFilter(filter);
+    setPage(1);
+  }
+
+  function handleLoadMore() {
+    if (page < pages && !loadingMore) {
+      fetchPage(page + 1, activeFilter, true);
+    }
+  }
 
   return (
     <div className="transactions-container">
       <header className="transactions-header">
         <h1>Transactions</h1>
         <p>View your transaction history.</p>
+        {!loading && !error && total > 0 && (
+          <p className="transactions-count">{total} transaction{total === 1 ? '' : 's'}</p>
+        )}
       </header>
 
-      <div className="filter-bar" role="tablist" aria-label="Transaction filters">
-        {filters.map((f) => (
+      <div className="filter-bar">
+        {FILTERS.map((filter) => (
           <button
-            key={f}
-            className={`filter-btn${activeFilter === f ? ' active' : ''}`}
-            onClick={() => setActiveFilter(f)}
-            role="tab"
-            aria-selected={activeFilter === f}
-            aria-controls={`panel-${f.toLowerCase()}`}
+            key={filter}
+            type="button"
+            className={`filter-btn${activeFilter === filter ? ' active' : ''}`}
+            onClick={() => handleFilterChange(filter)}
           >
-            {f}
+            {filter}
           </button>
         ))}
       </div>
 
       <div className="transactions-search">
-        <span className="search-icon" aria-hidden="true">🔍</span>
+        <span className="search-icon">🔍</span>
         <input
           type="text"
           placeholder="Search transactions..."
-          aria-label="Search transactions"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
         />
       </div>
 
-      <div className="transactions-list" role="tabpanel" id={`panel-${activeFilter.toLowerCase()}`} aria-label={`${activeFilter} transactions`}>
-        {loading ? (
-          <p className="state-message loading">Loading transactions...</p>
-        ) : filtered.length === 0 ? (
-          <p className="state-message empty">No transactions found</p>
-        ) : filtered.map((tx) => (
-          <div key={tx.id} className="transaction-row">
-            <div className={`tx-badge ${tx.type}`}>
-              {getTxIcon(tx.type)}
+      {loading && <p className="transactions-status">Loading transactions…</p>}
+
+      {error && (
+        <div className="transactions-error">
+          <p>{error}</p>
+          <button type="button" className="transactions-retry-btn" onClick={() => fetchPage(1, activeFilter, false)}>
+            Try again
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && visibleTransactions.length === 0 && (
+        <p className="transactions-status">No transactions match your filters.</p>
+      )}
+
+      <div className="transactions-list">
+        {visibleTransactions.map((tx) => {
+          const badge = badgeClass(tx);
+
+          return (
+            <div key={tx.id} className="transaction-row">
+              <div className={`tx-badge ${badge}`}>
+                {badge === 'bills' ? (
+                  <img src={lightningSvg} alt="" width="16" height="16" />
+                ) : badge === 'receive' ? (
+                  '↙'
+                ) : badge === 'airtime' ? (
+                  '📱'
+                ) : (
+                  '↗'
+                )}
+              </div>
+              <div className="tx-row-info">
+                <p className="tx-row-name">{tx.description}</p>
+                <p className="tx-row-desc">
+                  {tx.institution} · {tx.category}
+                </p>
+              </div>
+              <div className="tx-row-right">
+                <p className={`tx-row-amount ${tx.type === 'credit' ? 'positive' : 'negative'}`}>
+                  {formatSignedNgn(tx.amount, tx.type)}
+                </p>
+                <p className="tx-row-date">{formatTransactionDate(tx.date)}</p>
+              </div>
             </div>
-            <div className="tx-row-info">
-              <p className="tx-row-name">{tx.name}</p>
-              <p className="tx-row-desc">{tx.desc}</p>
-            </div>
-            <div className="tx-row-right">
-              <p className={`tx-row-amount ${tx.amount > 0 ? 'positive' : 'negative'}`}>
-                {tx.amount > 0 ? '+' : '-'}₦{Math.abs(tx.amount).toLocaleString()}
-              </p>
-              <p className="tx-row-date">{tx.date}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {!loading && !error && page < pages && (
+        <div className="transactions-load-more">
+          <button type="button" className="load-more-btn" onClick={handleLoadMore} disabled={loadingMore}>
+            {loadingMore ? 'Loading…' : `Load more (${page} of ${pages})`}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
