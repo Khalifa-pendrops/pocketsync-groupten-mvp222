@@ -10,10 +10,3 @@ export const mockTransactions: Transaction[] = [
   { id: 7, name: 'John Obi', desc: 'Transfer from 0098765432', amount: 150000, date: 'Apr 20, 8:15 AM', type: 'receive' },
   { id: 8, name: 'Data Bundle', desc: 'Glo NG', amount: -15000, date: 'Apr 19, 6:45 PM', type: 'airtime' },
 ];
-
-export const typeIcon: Record<string, string> = {
-  transfer: '↗',
-  receive: '↙',
-  bills: '⚡',
-  airtime: '📱',
-};

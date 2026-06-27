@@ -233,20 +233,19 @@
 }
 
 .la-add-btn {
-  width: 100%;
-  padding: 0.45rem 0;
-  background-color: var(--primary-blue);
-  color: #ffffff;
+  align-self: flex-start;
+  padding: 0.25rem 0;
+  background: none;
+  color: var(--primary-blue);
   border: none;
-  border-radius: var(--radius-md);
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: color 0.15s;
 }
 
 .la-add-btn:hover {
-  background-color: var(--purple--60);
+  color: var(--purple--60);
 }
 
 /* Can't find your bank bar */

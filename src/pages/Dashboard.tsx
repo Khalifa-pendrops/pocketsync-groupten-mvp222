@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import ConnectedAccounts from '../components/accounts/ConnectedAccounts';
+import SecurityConsentModal from '../components/modals/SecurityConsentModal';
 import './Dashboard.css';
 import transactionHistorySvg from '../assets/icons/transaction-history.svg';
 import accountAnalysisSvg from '../assets/icons/account-analysis.svg';
@@ -7,16 +9,40 @@ import accountStatementSvg from '../assets/icons/account-statement.svg';
 import quickPayBillsSvg from '../assets/icons/quick-pay-bills.svg';
 import scanQrSvg from '../assets/icons/scan-qr.svg';
 import lightningSvg from '../assets/icons/lightning.svg';
-import phoneSvg from '../assets/icons/phone.svg';
-
-const spendingData = [
-  { name: 'Transfer', value: 65, color: '#ef4444' },
-  { name: 'Bills', value: 45, color: '#9333ea' },
-  { name: 'Receive', value: 20, color: '#10b981' },
-  { name: 'Others', value: 9, color: '#6b7280' },
-];
+import { transactionService, dashboardService } from '../services';
+import type { Transaction, SpendingCategory } from '../types';
 
 const Dashboard = () => {
+  const [showConsent, setShowConsent] = useState(false);
+  const [recentTx, setRecentTx] = useState<Transaction[]>([]);
+  const [spendingData, setSpendingData] = useState<SpendingCategory[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
+  const [spendingLoading, setSpendingLoading] = useState(true);
+
+  useEffect(() => {
+    transactionService.getAll().then((data) => {
+      setRecentTx(data.slice(0, 5));
+      setTxLoading(false);
+    });
+    dashboardService.getSpendingData().then((data) => {
+      setSpendingData(data);
+      setSpendingLoading(false);
+    });
+  }, []);
+
+  const getTxIcon = (type: string) => {
+    switch (type) {
+      case 'bills':
+        return <img src={lightningSvg} alt="" width="16" height="16" />;
+      case 'transfer':
+        return '↗';
+      case 'receive':
+        return '↙';
+      default:
+        return '💳';
+    }
+  };
+
   return (
     <div className="dashboard-container">
       {/* Header */}
@@ -25,7 +51,7 @@ const Dashboard = () => {
         <p className="subtitle">Here's what's happening to your money today.</p>
       </header>
 
-      <ConnectedAccounts />
+      <ConnectedAccounts onAddAccount={() => setShowConsent(true)} />
 
       {/* Quick Actions */}
       <section className="dashboard-section">
@@ -79,69 +105,30 @@ const Dashboard = () => {
             <a href="#" className="view-all">View all</a>
           </div>
           <div className="transactions-card">
-            <div className="transaction-item">
-              <div className="tx-icon tx-transfer">↗</div>
-              <div className="tx-details">
-                <p className="tx-name">Chiamaka Opal</p>
-                <p className="tx-desc">Transfer to 0024561190</p>
-              </div>
-              <div className="tx-amount-time">
-                <p className="tx-amount tx-negative">-₦150,000.00</p>
-                <p className="tx-time">Today, 9:41 AM</p>
-              </div>
-            </div>
-            
-            <div className="transaction-item">
-              <div className="tx-icon tx-bills">
-              <img src={lightningSvg} alt="" width="16" height="16" />
-            </div>
-              <div className="tx-details">
-                <p className="tx-name">Electricity Bill</p>
-                <p className="tx-desc">EEDC Enugu</p>
-              </div>
-              <div className="tx-amount-time">
-                <p className="tx-amount tx-negative">-₦75,000.00</p>
-                <p className="tx-time">Yesterday, 10:05 AM</p>
-              </div>
-            </div>
-
-            <div className="transaction-item">
-              <div className="tx-icon tx-transfer">↗</div>
-              <div className="tx-details">
-                <p className="tx-name">Adaeze Okeke</p>
-                <p className="tx-desc">Transfer to 0034567890</p>
-              </div>
-              <div className="tx-amount-time">
-                <p className="tx-amount tx-negative">-₦200,000.00</p>
-                <p className="tx-time">Jun 20, 10:30 AM</p>
-              </div>
-            </div>
-
-            <div className="transaction-item">
-              <div className="tx-icon tx-receive">↙</div>
-              <div className="tx-details">
-                <p className="tx-name">Ifeanyi Uche</p>
-                <p className="tx-desc">Transfer to 0045678901</p>
-              </div>
-              <div className="tx-amount-time">
-                <p className="tx-amount tx-positive">+₦50,000.00</p>
-                <p className="tx-time">Jun 18, 11:15 AM</p>
-              </div>
-            </div>
-
-            <div className="transaction-item">
-              <div className="tx-icon tx-mobile">
-              <img src={phoneSvg} alt="" width="32" height="32" />
-            </div>
-              <div className="tx-details">
-                <p className="tx-name">Airtime Purchase</p>
-                <p className="tx-desc">MTN NG</p>
-              </div>
-              <div className="tx-amount-time">
-                <p className="tx-amount tx-negative">-₦120,000.00</p>
-                <p className="tx-time">Apr 24, 11:45 AM</p>
-              </div>
-            </div>
+            {txLoading ? (
+              <p className="state-message loading">Loading transactions...</p>
+            ) : recentTx.length === 0 ? (
+              <p className="state-message empty">No recent transactions</p>
+            ) : recentTx.map((tx) => {
+              const amount = typeof tx.amount === 'number' ? tx.amount : 0;
+              return (
+                <div key={tx.id} className="transaction-item">
+                  <div className={`tx-icon tx-${tx.type}`}>
+                    {getTxIcon(tx.type)}
+                  </div>
+                  <div className="tx-details">
+                    <p className="tx-name">{tx.name}</p>
+                    <p className="tx-desc">{tx.desc}</p>
+                  </div>
+                  <div className="tx-amount-time">
+                    <p className={`tx-amount ${amount > 0 ? 'tx-positive' : 'tx-negative'}`}>
+                      {amount > 0 ? '+' : '-'}₦{Math.abs(amount).toLocaleString()}
+                    </p>
+                    <p className="tx-time">{tx.date}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -150,7 +137,7 @@ const Dashboard = () => {
           <section className="dashboard-section">
             <div className="section-header">
               <h2>Spending Overview</h2>
-              <select className="date-dropdown">
+              <select className="date-dropdown" aria-label="Select month">
                 <option value="">This Month</option>
                 <option value="1">January</option>
                 <option value="2">February</option>
@@ -167,39 +154,45 @@ const Dashboard = () => {
               </select>
             </div>
             <div className="spending-card">
-              <div className="chart-container">
-                <div className="chart-area">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={spendingData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={35}
-                        outerRadius={55}
-                        paddingAngle={0}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {spendingData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="chart-legend">
-                  {spendingData.map((item, index) => (
-                    <div key={index} className="legend-item">
-                      <div className="legend-color-label">
-                        <span className="color-dot" style={{ backgroundColor: item.color }}></span>
-                        <span className="legend-name">{item.name}</span>
+              {spendingLoading ? (
+                <p className="state-message loading">Loading spending data...</p>
+              ) : spendingData.length === 0 ? (
+                <p className="state-message empty">No spending data available</p>
+              ) : (
+                <div className="chart-container">
+                  <div className="chart-area">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={spendingData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={35}
+                          outerRadius={55}
+                          paddingAngle={0}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {spendingData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="chart-legend">
+                    {spendingData.map((item, index) => (
+                      <div key={index} className="legend-item">
+                        <div className="legend-color-label">
+                          <span className="color-dot" style={{ backgroundColor: item.color }}></span>
+                          <span className="legend-name">{item.name}</span>
+                        </div>
+                        <span className="legend-value">{item.value}%</span>
                       </div>
-                      <span className="legend-value">{item.value}%</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 
@@ -214,6 +207,12 @@ const Dashboard = () => {
           </section>
         </div>
       </div>
+
+      <SecurityConsentModal
+        isOpen={showConsent}
+        onClose={() => setShowConsent(false)}
+        onProceed={() => setShowConsent(false)}
+      />
     </div>
   );
 };

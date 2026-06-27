@@ -1,21 +1,28 @@
+import { useState, useEffect } from 'react';
 import './PayBills.css';
 import lightningSvg from '../assets/icons/lightning.svg';
-
-const categories = [
-  { name: 'Electricity', icon: lightningSvg, count: 2 },
-  { name: 'Internet', icon: '🌐', count: 1 },
-  { name: 'Airtime', icon: '📱', count: 3 },
-  { name: 'TV Subscription', icon: '📺', count: 1 },
-];
-
-const bills = [
-  { name: 'EEDC Enugu', category: 'Electricity', amount: 75000, due: 'Jun 30, 2026', overdue: false },
-  { name: 'Ikeja Electric', category: 'Electricity', amount: 45000, due: 'Jun 25, 2026', overdue: true },
-  { name: 'MTN Data Plan', category: 'Airtime', amount: 15000, due: 'Jul 5, 2026', overdue: false },
-  { name: 'GOtv Subscription', category: 'TV Subscription', amount: 8500, due: 'Jul 10, 2026', overdue: false },
-];
+import { budgetService } from '../services';
+import type { BillCategory, Bill } from '../types';
 
 const PayBills = () => {
+  const [categories, setCategories] = useState<BillCategory[]>([]);
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [catLoading, setCatLoading] = useState(true);
+  const [billsLoading, setBillsLoading] = useState(true);
+
+  useEffect(() => {
+    budgetService.getCategories().then((data) => {
+      setCategories(data);
+      setCatLoading(false);
+    });
+    budgetService.getBills().then((data) => {
+      setBills(data);
+      setBillsLoading(false);
+    });
+  }, []);
+
+  const totalDue = bills.reduce((s, b) => s + b.amount, 0);
+
   return (
     <div className="pay-bills-container">
       <header className="pay-bills-header">
@@ -25,16 +32,18 @@ const PayBills = () => {
 
       <div className="bills-balance-card">
         <p className="bills-balance-label">Wallet Balance</p>
-        <p className="bills-balance-amount">₦245,000.00</p>
+        <p className="bills-balance-amount">₦{totalDue.toLocaleString()}.00</p>
         <p className="bills-balance-sub">Sufficient for all upcoming bills</p>
       </div>
 
       <div className="bills-category-grid">
-        {categories.map((cat) => (
+        {catLoading ? (
+          <p className="state-message loading" style={{ gridColumn: '1 / -1' }}>Loading categories...</p>
+        ) : categories.map((cat) => (
           <div key={cat.name} className="bill-category-card">
             <div className="bill-cat-icon">
               {cat.name === 'Electricity' ? (
-                <img src={cat.icon as string} alt="" width="24" height="24" />
+                <img src={lightningSvg} alt="" width="24" height="24" />
               ) : (
                 cat.icon
               )}
@@ -47,7 +56,11 @@ const PayBills = () => {
 
       <section className="upcoming-bills">
         <h2>Upcoming Bills</h2>
-        {bills.map((bill, i) => (
+        {billsLoading ? (
+          <p className="state-message loading">Loading bills...</p>
+        ) : bills.length === 0 ? (
+          <p className="state-message empty">No upcoming bills</p>
+        ) : bills.map((bill, i) => (
           <div key={i} className="bill-item">
             <div className="bill-icon">
               {bill.category === 'Electricity' ? (

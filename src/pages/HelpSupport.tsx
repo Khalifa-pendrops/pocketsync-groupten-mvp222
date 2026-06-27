@@ -31,14 +31,14 @@ const HelpSupport = () => {
       </header>
 
       <div className="help-search">
-        <span className="help-search-icon">🔍</span>
-        <input type="text" placeholder="Search for help..." />
+        <span className="help-search-icon" aria-hidden="true">🔍</span>
+        <input type="text" placeholder="Search for help..." aria-label="Search help articles" />
       </div>
 
       <div className="help-category-grid">
         {categories.map((cat) => (
           <div key={cat.title} className="help-category-card">
-            <div className="help-cat-icon">{cat.icon}</div>
+            <div className="help-cat-icon" aria-hidden="true">{cat.icon}</div>
             <p className="help-cat-title">{cat.title}</p>
             <p className="help-cat-desc">{cat.desc}</p>
           </div>
@@ -49,12 +49,19 @@ const HelpSupport = () => {
         <h2>Frequently Asked Questions</h2>
         {faqs.map((faq, i) => (
           <div key={i} className={`faq-item${openIndex === i ? ' open' : ''}`}>
-            <button className="faq-question" onClick={() => toggleFaq(i)}>
+            <button
+              className="faq-question"
+              onClick={() => toggleFaq(i)}
+              aria-expanded={openIndex === i}
+              aria-controls={`faq-answer-${i}`}
+            >
               {faq.q}
-              <span className="faq-chevron">▼</span>
+              <span className="faq-chevron" aria-hidden="true">▼</span>
             </button>
             {openIndex === i && (
-              <div className="faq-answer">{faq.a}</div>
+              <div id={`faq-answer-${i}`} className="faq-answer" role="region">
+                {faq.a}
+              </div>
             )}
           </div>
         ))}

@@ -29,6 +29,12 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.15s;
+}
+
+.notification-btn:hover {
+  background-color: var(--grey-20);
 }
 
 .notif-icon {
@@ -58,17 +64,33 @@
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 0.25rem;
+  margin: -0.25rem;
+  transition: background-color 0.15s;
+}
+
+.profile-section:hover {
+  background-color: var(--grey-20);
 }
 
 .profile-avatar {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: var(--light-blue);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1rem;
+  overflow: hidden;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .profile-name {
@@ -80,7 +102,7 @@
 /* Main Content */
 .layout-content {
   flex: 1;
-  padding-bottom: 60px;
+  padding-top: 56px;
   background-color: var(--bg-main);
   overflow-y: auto;
 }
@@ -92,7 +114,7 @@
   }
 
   .layout-content {
-    padding-bottom: 0;
+    padding-top: 0;
   }
 
   .top-right-container {

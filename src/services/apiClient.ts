@@ -1,4 +1,5 @@
 const API_BASE_URL = 'https://pocketsync.onrender.com/api/v1';
+const DEFAULT_TIMEOUT = 10000; // 10 seconds
 
 let authToken: string | null = null;
 
@@ -16,22 +17,40 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
 
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(`API error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
+    }
+
+    const json = await response.json();
+
+    if (json && json.data !== undefined) {
+      return json.data as T;
+    }
+
+    return json as T;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout', { cause: error });
+      }
+      throw error;
+    }
+    throw new Error('Unknown error occurred', { cause: error });
   }
-
-  const json = await response.json();
-
-  if (json && json.data !== undefined) {
-    return json.data as T;
-  }
-
-  return json as T;
 }
 
 export const apiClient = {

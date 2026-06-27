@@ -13,9 +13,8 @@
   --danger: #EF4444;
 
   /* Purple scale */
-  --purple-30: hsl(253deg 52% 72%);
-  --purple--base: hsl(253, 64%, 45%);
-  --purple--60: hsl(253deg 64% 37%);
+  --purple-base: hsl(253, 64%, 45%);
+  --purple-60: hsl(253deg 64% 37%);
 
   /* Grey scale */
   --grey-20: hsl(0deg 0% 95%);
@@ -26,35 +25,30 @@
 
   /* Neutral UI tokens */
   --text-primary: hsl(0deg 0% 17%);
+  --text-secondary: hsl(0deg 0% 43%);
   --bg-main: hsl(0deg 0% 95%);
+  --bg-surface: #ffffff;
+  --border-color: #C3C3C3;
 
   /* Typography — SF Pro on Apple, Inter on Windows/Android */
   --font-family-base: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
 
-  /* Spacing scale */
-  --var-10: 8px;
-  --var-30: 16px;
-  --var-50: 24px;
-  --var-90: 40px;
-
   /* Border radius scale */
   --radius-sm: 6px;
   --radius-md: 8px;
-  --radius-lg: 8px;
-  --radius-xl: 8px;
-  --radius-2xl: 8px;
-  --radius-3xl: 8px;
-  --radius-full: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+  --radius-full: 9999px;
 
   /* Shadow scale */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.02);
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
 
   /* Typography scale */
-  --body-2: 16px;
   --body-3: 14px;
-  --body-4: 12px;
 }
 
 *, *::before, *::after {
@@ -104,4 +98,52 @@ ul, ol {
 button {
   font-family: var(--font-family-base);
   cursor: pointer;
+}
+
+input, select, textarea {
+  font-family: var(--font-family-base);
+  font-size: var(--body-3);
+  color: var(--text-primary);
+}
+
+/* ── Focus visible for accessibility ──────────────── */
+:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+/* ── Loading & Empty State Utilities ──────────────── */
+.state-message {
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* ── Very Small Screens (≤360px) ────────────────── */
+@media (max-width: 360px) {
+  .dashboard-container,
+  .transactions-container,
+  .analytics-container,
+  .la-container,
+  .pay-bills-container,
+  .help-support-container,
+  .settings-container {
+    padding: 0.625rem;
+  }
+
+  .quick-actions-grid {
+    gap: 0.5rem;
+  }
+
+  .settings-row {
+    padding: 0.75rem 0.75rem;
+  }
+
+  .bills-category-grid,
+  .help-category-grid,
+  .analytics-summary-grid,
+  .la-grid {
+    gap: 0.5rem;
+  }
 }

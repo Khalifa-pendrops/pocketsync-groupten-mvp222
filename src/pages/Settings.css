@@ -112,6 +112,14 @@
   padding: 0;
 }
 
+.settings-toggle:hover {
+  background-color: var(--grey-60);
+}
+
+.settings-toggle.active:hover {
+  background-color: var(--purple--60);
+}
+
 .settings-toggle.active {
   background-color: var(--primary-blue);
 }

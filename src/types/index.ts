@@ -8,6 +8,11 @@ export interface Institution {
   logoColor: string;
 }
 
+export interface InstitutionApi {
+  id: string;
+  name: string;
+}
+
 export interface BankAccount {
   id: string;
   bankName: string;

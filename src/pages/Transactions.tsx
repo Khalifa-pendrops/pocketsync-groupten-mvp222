@@ -1,19 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Transactions.css';
 import lightningSvg from '../assets/icons/lightning.svg';
+import { transactionService } from '../services';
+import type { Transaction } from '../types';
 
 const filters = ['All', 'Income', 'Expense', 'Transfer', 'Bills', 'Airtime'];
-
-const allTransactions = [
-  { id: 1, name: 'Chiamaka Opal', desc: 'Transfer to 0024561190', amount: -150000, date: 'Today, 9:41 AM', type: 'transfer' },
-  { id: 2, name: 'Electricity Bill', desc: 'EEDC Enugu', amount: -75000, date: 'Yesterday, 10:05 AM', type: 'bills' },
-  { id: 3, name: 'Adaeze Okeke', desc: 'Transfer to 0034567890', amount: -200000, date: 'Jun 20, 10:30 AM', type: 'transfer' },
-  { id: 4, name: 'Ifeanyi Uche', desc: 'Transfer from 0045678901', amount: 50000, date: 'Jun 18, 11:15 AM', type: 'receive' },
-  { id: 5, name: 'Airtime Purchase', desc: 'MTN NG', amount: -120000, date: 'Apr 24, 11:45 AM', type: 'airtime' },
-  { id: 6, name: 'NEPA Bill', desc: 'Ikeja Electric', amount: -45000, date: 'Apr 22, 2:30 PM', type: 'bills' },
-  { id: 7, name: 'John Obi', desc: 'Transfer from 0098765432', amount: 150000, date: 'Apr 20, 8:15 AM', type: 'receive' },
-  { id: 8, name: 'Data Bundle', desc: 'Glo NG', amount: -15000, date: 'Apr 19, 6:45 PM', type: 'airtime' },
-];
 
 const typeIcon: Record<string, string> = {
   transfer: '↗',
@@ -22,8 +13,22 @@ const typeIcon: Record<string, string> = {
   airtime: '📱',
 };
 
+const getTxIcon = (type: string) => {
+  if (type === 'bills') return <img src={lightningSvg} alt="" width="16" height="16" />;
+  return typeIcon[type] || '💳';
+};
+
 const Transactions = () => {
   const [activeFilter, setActiveFilter] = useState('All');
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    transactionService.getAll().then((data) => {
+      setAllTransactions(data);
+      setLoading(false);
+    });
+  }, []);
 
   const filtered = activeFilter === 'All'
     ? allTransactions
@@ -36,12 +41,15 @@ const Transactions = () => {
         <p>View your transaction history.</p>
       </header>
 
-      <div className="filter-bar">
+      <div className="filter-bar" role="tablist" aria-label="Transaction filters">
         {filters.map((f) => (
           <button
             key={f}
             className={`filter-btn${activeFilter === f ? ' active' : ''}`}
             onClick={() => setActiveFilter(f)}
+            role="tab"
+            aria-selected={activeFilter === f}
+            aria-controls={`panel-${f.toLowerCase()}`}
           >
             {f}
           </button>
@@ -49,19 +57,23 @@ const Transactions = () => {
       </div>
 
       <div className="transactions-search">
-        <span className="search-icon">🔍</span>
-        <input type="text" placeholder="Search transactions..." />
+        <span className="search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="text"
+          placeholder="Search transactions..."
+          aria-label="Search transactions"
+        />
       </div>
 
-      <div className="transactions-list">
-        {filtered.map((tx) => (
+      <div className="transactions-list" role="tabpanel" id={`panel-${activeFilter.toLowerCase()}`} aria-label={`${activeFilter} transactions`}>
+        {loading ? (
+          <p className="state-message loading">Loading transactions...</p>
+        ) : filtered.length === 0 ? (
+          <p className="state-message empty">No transactions found</p>
+        ) : filtered.map((tx) => (
           <div key={tx.id} className="transaction-row">
             <div className={`tx-badge ${tx.type}`}>
-              {tx.type === 'bills' ? (
-                <img src={lightningSvg} alt="" width="16" height="16" />
-              ) : (
-                typeIcon[tx.type] || '💳'
-              )}
+              {getTxIcon(tx.type)}
             </div>
             <div className="tx-row-info">
               <p className="tx-row-name">{tx.name}</p>

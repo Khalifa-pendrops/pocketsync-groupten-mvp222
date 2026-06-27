@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './LinkAccounts.css';
 import shieldCheckSvg from '../assets/icons/shield-check.svg';
 import buildingSvg from '../assets/icons/building.svg';
@@ -6,31 +6,13 @@ import linkSvg from '../assets/icons/link.svg';
 import shieldLockSvg from '../assets/icons/shield-lock.svg';
 import checkCircleSvg from '../assets/icons/check-circle.svg';
 import lockSvg from '../assets/icons/lock.svg';
-import gtbankLogo from '../assets/images/gtbank.png';
-import accessLogo from '../assets/images/access.png';
-import opayLogo from '../assets/images/opay.png';
-import zenithLogo from '../assets/images/zenith.png';
+import SecurityConsentModal from '../components/modals/SecurityConsentModal';
+import { institutionService } from '../services';
+import type { Institution } from '../types';
 
 type Category = 'All' | 'Banks' | 'Fintechs' | 'Microfinance Banks';
 
-interface Institution {
-  id: string;
-  name: string;
-  masked: string;
-  category: Omit<Category, 'All'>;
-  logoSrc?: string;
-  initial: string;
-  logoColor: string;
-}
-
 const TABS: Category[] = ['All', 'Banks', 'Fintechs', 'Microfinance Banks'];
-
-const MOCK_INSTITUTIONS: Institution[] = [
-  { id: '1', name: 'GTBank', masked: '**** 1234', category: 'Banks', initial: 'G', logoColor: '#6b3fa0', logoSrc: gtbankLogo },
-  { id: '2', name: 'Access Bank', masked: '**** 5678', category: 'Banks', initial: 'A', logoColor: '#e30613', logoSrc: accessLogo },
-  { id: '3', name: 'Opay', masked: '**** 9012', category: 'Fintechs', initial: 'O', logoColor: '#00a85d', logoSrc: opayLogo },
-  { id: '4', name: 'Zenith Bank', masked: '**** 3456', category: 'Banks', initial: 'Z', logoColor: '#1a3a6b', logoSrc: zenithLogo },
-];
 
 interface BankLogoProps {
   src?: string;
@@ -62,7 +44,16 @@ function BankLogo({ src, initial, color, size = 48 }: BankLogoProps) {
 
 const LinkAccounts = () => {
   const [activeTab, setActiveTab] = useState<Category>('All');
-  const [institutions] = useState<Institution[]>(MOCK_INSTITUTIONS);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
+
+  useEffect(() => {
+    institutionService.getAll().then((data) => {
+      setInstitutions(data);
+      setLoading(false);
+    });
+  }, []);
 
   const filtered =
     activeTab === 'All'
@@ -74,8 +65,13 @@ const LinkAccounts = () => {
 
       {/* Search bar - top */}
       <div className="la-search">
-        <span className="la-search-icon">🔍</span>
-        <input type="text" className="la-search-input" placeholder="Search for your bank or fintech" />
+        <span className="la-search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="text"
+          className="la-search-input"
+          placeholder="Search for your bank or fintech"
+          aria-label="Search banks and fintechs"
+        />
       </div>
 
       {/* Page title row */}
@@ -98,40 +94,53 @@ const LinkAccounts = () => {
       </div>
 
       {/* Filter tabs */}
-      <div className="la-tabs">
+      <div className="la-tabs" role="tablist" aria-label="Institution categories">
         {TABS.map((tab) => (
           <button
             key={tab}
             className={`la-tab${activeTab === tab ? ' la-tab--active' : ''}`}
             onClick={() => setActiveTab(tab)}
+            role="tab"
+            aria-selected={activeTab === tab}
+            aria-controls={`panel-${tab.toLowerCase().replace(/\s+/g, '-')}`}
           >
             {tab}
           </button>
         ))}
       </div>
 
-      {/* Grid section */}
+{/* Grid section */}
       <section className="la-section">
         <h2 className="la-section-title">Accounts linked to BVN</h2>
-        <div className="la-grid">
-          {filtered.map((inst) => (
-            <div key={inst.id} className="la-card">
-              <div className="la-card-header">
-                <BankLogo
-                  src={inst.logoSrc}
-                  initial={inst.initial}
-                  color={inst.logoColor}
-                  size={48}
-                />
-                <div className="la-card-info">
-                  <p className="la-card-name">{inst.name}</p>
-                  <p className="la-card-masked">{inst.masked}</p>
+        {loading ? (
+          <p className="state-message loading">Loading institutions...</p>
+        ) : (
+          <div className="la-grid">
+            {filtered.map((inst) => (
+              <div key={inst.id} className="la-card">
+                <div className="la-card-header">
+                  <BankLogo
+                    src={inst.logoSrc}
+                    initial={inst.initial}
+                    color={inst.logoColor}
+                    size={48}
+                  />
+                  <div className="la-card-info">
+                    <p className="la-card-name">{inst.name}</p>
+                    <p className="la-card-masked">{inst.masked}</p>
+                  </div>
                 </div>
+                <button
+                  className="la-add-btn"
+                  onClick={() => setSelectedInstitution(inst)}
+                  aria-label={`Add ${inst.name} account`}
+                >
+                  Add Account
+                </button>
               </div>
-              <button className="la-add-btn">Add Account</button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Can't find your bank */}
@@ -146,7 +155,7 @@ const LinkAccounts = () => {
           </div>
         </div>
         <button className="la-manual-btn">
-          Enter Details Manually <span>›</span>
+          Enter Details Manually <span aria-hidden="true">›</span>
         </button>
       </div>
 
@@ -198,6 +207,13 @@ const LinkAccounts = () => {
         We never store your login details. Your data is encrypted and secure.
       </div>
 
+      <SecurityConsentModal
+        isOpen={selectedInstitution !== null}
+        onClose={() => setSelectedInstitution(null)}
+        onProceed={() => {
+          setSelectedInstitution(null);
+        }}
+      />
     </div>
   );
 };
