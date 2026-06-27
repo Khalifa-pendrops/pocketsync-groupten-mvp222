@@ -53,13 +53,24 @@
   font-size: var(--body-4);
   padding: var(--var-10);
   text-decoration: none;
-  transition: color 0.15s;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.nav-link:hover {
+  background-color: var(--grey-20);
+  color: var(--primary-blue);
+}
+
+.nav-link:hover .nav-icon {
+  filter: brightness(0) saturate(100%) invert(34%) sepia(62%) saturate(2848%) hue-rotate(248deg) brightness(97%) contrast(93%);
 }
 
 .nav-icon {
   font-size: 1.25rem;
   margin-bottom: 0.1rem;
   filter: brightness(0) saturate(100%) invert(18%) sepia(67%) saturate(3579%) hue-rotate(252deg) brightness(87%) contrast(95%);
+  transition: filter 0.15s;
 }
 
 .nav-text {
@@ -158,7 +169,11 @@
 
   .nav-link:hover {
     background-color: var(--grey-20);
-    color: var(--text-primary);
+    color: var(--primary-blue);
+  }
+
+  .nav-link:hover .nav-icon {
+    filter: brightness(0) saturate(100%) invert(34%) sepia(62%) saturate(2848%) hue-rotate(248deg) brightness(97%) contrast(93%);
   }
 
   /* Active state: solid blue fill */

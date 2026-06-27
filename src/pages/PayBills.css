@@ -62,7 +62,7 @@
 
 .bill-category-card {
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  border: 1px solid #C3C3C3;
   border-radius: var(--radius-xl);
   padding: 1.25rem;
   text-align: center;
@@ -106,7 +106,7 @@
   align-items: center;
   gap: 1rem;
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  border: 1px solid #C3C3C3;
   border-radius: var(--radius-xl);
   padding: 1rem;
   margin-bottom: 0.75rem;

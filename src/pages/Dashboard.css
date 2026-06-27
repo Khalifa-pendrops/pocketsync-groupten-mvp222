@@ -73,7 +73,7 @@
 
 .action-card {
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  border: 1px solid #C3C3C3;
   border-radius: var(--radius-xl);
   padding: 1.25rem 0.5rem;
   display: flex;
@@ -125,7 +125,7 @@
 /* Transactions Card */
 .transactions-card {
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  border: 1px solid #C3C3C3;
   border-radius: var(--radius-xl);
   padding: 1rem;
 }
@@ -195,7 +195,7 @@
 .date-dropdown {
   padding: 0.25rem 0.75rem;
   border-radius: 4px;
-  border: 1px solid var(--border-color);
+  border: 1px solid #C3C3C3;
   font-size: 0.875rem;
   background-color: var(--bg-surface);
   color:#2b2b2b;
@@ -203,7 +203,7 @@
 
 .spending-card {
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  border: 1px solid #C3C3C3;
   border-radius: var(--radius-xl);
   padding: 1rem;
 }

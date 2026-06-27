@@ -1,5 +1,15 @@
 import { useState } from 'react';
 import './LinkAccounts.css';
+import shieldCheckSvg from '../assets/icons/shield-check.svg';
+import buildingSvg from '../assets/icons/building.svg';
+import linkSvg from '../assets/icons/link.svg';
+import shieldLockSvg from '../assets/icons/shield-lock.svg';
+import checkCircleSvg from '../assets/icons/check-circle.svg';
+import lockSvg from '../assets/icons/lock.svg';
+import gtbankLogo from '../assets/images/gtbank.png';
+import accessLogo from '../assets/images/access.png';
+import opayLogo from '../assets/images/opay.png';
+import zenithLogo from '../assets/images/zenith.png';
 
 type Category = 'All' | 'Banks' | 'Fintechs' | 'Microfinance Banks';
 
@@ -13,15 +23,14 @@ interface Institution {
   logoColor: string;
 }
 
-const institutions: Institution[] = [
-  { id: '1', name: 'GTBank',      masked: '••••9507', category: 'Banks',               initial: 'G', logoColor: '#e03127' },
-  { id: '2', name: 'Access Bank', masked: '••••6705', category: 'Banks',               initial: 'A', logoColor: '#e30613' },
-  { id: '3', name: 'Opay',        masked: '••••1006', category: 'Fintechs',            initial: 'O', logoColor: '#00a85d' },
-  { id: '4', name: 'Zenith Bank', masked: '••••7401', category: 'Banks',               initial: 'Z', logoColor: '#1a3a6b' },
- 
-];
-
 const TABS: Category[] = ['All', 'Banks', 'Fintechs', 'Microfinance Banks'];
+
+const MOCK_INSTITUTIONS: Institution[] = [
+  { id: '1', name: 'GTBank', masked: '**** 1234', category: 'Banks', initial: 'G', logoColor: '#6b3fa0', logoSrc: gtbankLogo },
+  { id: '2', name: 'Access Bank', masked: '**** 5678', category: 'Banks', initial: 'A', logoColor: '#e30613', logoSrc: accessLogo },
+  { id: '3', name: 'Opay', masked: '**** 9012', category: 'Fintechs', initial: 'O', logoColor: '#00a85d', logoSrc: opayLogo },
+  { id: '4', name: 'Zenith Bank', masked: '**** 3456', category: 'Banks', initial: 'Z', logoColor: '#1a3a6b', logoSrc: zenithLogo },
+];
 
 interface BankLogoProps {
   src?: string;
@@ -29,7 +38,7 @@ interface BankLogoProps {
   color: string;
   size?: number;
 }
-function BankLogo({ src, initial, color, size = 40 }: BankLogoProps) {
+function BankLogo({ src, initial, color, size = 48 }: BankLogoProps) {
   return src ? (
     <img
       src={src}
@@ -53,13 +62,14 @@ function BankLogo({ src, initial, color, size = 40 }: BankLogoProps) {
 
 const LinkAccounts = () => {
   const [activeTab, setActiveTab] = useState<Category>('All');
+  const [institutions] = useState<Institution[]>(MOCK_INSTITUTIONS);
 
   const filtered =
     activeTab === 'All'
       ? institutions
       : institutions.filter((i) => i.category === activeTab);
 
-return (
+  return (
     <div className="la-container">
 
       {/* Search bar - top */}
@@ -77,7 +87,9 @@ return (
           </p>
         </div>
         <div className="la-secure-badge">
-          <span className="la-secure-icon">🔒</span>
+          <span className="la-secure-icon">
+            <img src={shieldCheckSvg} alt="" width="24" height="24" />
+          </span>
           <div>
             <p className="la-secure-title">Secure Connection</p>
             <p className="la-secure-desc">256-bit SSL encryption</p>
@@ -109,7 +121,7 @@ return (
                   src={inst.logoSrc}
                   initial={inst.initial}
                   color={inst.logoColor}
-                  size={40}
+                  size={48}
                 />
                 <div className="la-card-info">
                   <p className="la-card-name">{inst.name}</p>
@@ -125,7 +137,9 @@ return (
       {/* Can't find your bank */}
       <div className="la-manual-bar">
         <div className="la-manual-left">
-          <span className="la-manual-icon">🏦</span>
+          <span className="la-manual-icon">
+            <img src={buildingSvg} alt="" width="24" height="24" />
+          </span>
           <div>
             <p className="la-manual-title">Can't find your bank?</p>
             <p className="la-manual-desc">Connect using your account details</p>
@@ -141,7 +155,9 @@ return (
         <h2 className="la-section-title">How it works</h2>
         <div className="la-steps">
           <div className="la-step">
-            <div className="la-step-icon">🏛️</div>
+            <div className="la-step-icon">
+              <img src={linkSvg} alt="" width="34" height="34" />
+            </div>
             <div className="la-step-body">
               <p className="la-step-num">1. Select your bank</p>
               <p className="la-step-desc">
@@ -150,7 +166,9 @@ return (
             </div>
           </div>
           <div className="la-step">
-            <div className="la-step-icon">🔐</div>
+            <div className="la-step-icon">
+              <img src={shieldLockSvg} alt="" width="24" height="24" />
+            </div>
             <div className="la-step-body">
               <p className="la-step-num">2. Secure login</p>
               <p className="la-step-desc">
@@ -159,7 +177,9 @@ return (
             </div>
           </div>
           <div className="la-step">
-            <div className="la-step-icon">✅</div>
+            <div className="la-step-icon">
+              <img src={checkCircleSvg} alt="" width="24" height="24" />
+            </div>
             <div className="la-step-body">
               <p className="la-step-num">3. Connection successful</p>
               <p className="la-step-desc">
@@ -172,7 +192,9 @@ return (
 
       {/* Privacy note */}
       <div className="la-privacy">
-        <span className="la-privacy-icon">🔒</span>
+        <span className="la-privacy-icon">
+          <img src={lockSvg} alt="" width="16" height="16" />
+        </span>
         We never store your login details. Your data is encrypted and secure.
       </div>
 

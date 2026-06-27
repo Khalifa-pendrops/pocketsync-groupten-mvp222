@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './Transactions.css';
+import lightningSvg from '../assets/icons/lightning.svg';
 
 const filters = ['All', 'Income', 'Expense', 'Transfer', 'Bills', 'Airtime'];
 
@@ -56,7 +57,11 @@ const Transactions = () => {
         {filtered.map((tx) => (
           <div key={tx.id} className="transaction-row">
             <div className={`tx-badge ${tx.type}`}>
-              {typeIcon[tx.type] || '💳'}
+              {tx.type === 'bills' ? (
+                <img src={lightningSvg} alt="" width="16" height="16" />
+              ) : (
+                typeIcon[tx.type] || '💳'
+              )}
             </div>
             <div className="tx-row-info">
               <p className="tx-row-name">{tx.name}</p>

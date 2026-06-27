@@ -1,7 +1,8 @@
 import './PayBills.css';
+import lightningSvg from '../assets/icons/lightning.svg';
 
 const categories = [
-  { name: 'Electricity', icon: '💡', count: 2 },
+  { name: 'Electricity', icon: lightningSvg, count: 2 },
   { name: 'Internet', icon: '🌐', count: 1 },
   { name: 'Airtime', icon: '📱', count: 3 },
   { name: 'TV Subscription', icon: '📺', count: 1 },
@@ -31,7 +32,13 @@ const PayBills = () => {
       <div className="bills-category-grid">
         {categories.map((cat) => (
           <div key={cat.name} className="bill-category-card">
-            <div className="bill-cat-icon">{cat.icon}</div>
+            <div className="bill-cat-icon">
+              {cat.name === 'Electricity' ? (
+                <img src={cat.icon as string} alt="" width="24" height="24" />
+              ) : (
+                cat.icon
+              )}
+            </div>
             <p className="bill-cat-name">{cat.name}</p>
             <p className="bill-cat-count">{cat.count} bill{cat.count > 1 ? 's' : ''}</p>
           </div>
@@ -43,7 +50,13 @@ const PayBills = () => {
         {bills.map((bill, i) => (
           <div key={i} className="bill-item">
             <div className="bill-icon">
-              {bill.category === 'Electricity' ? '💡' : bill.category === 'Airtime' ? '📱' : '📺'}
+              {bill.category === 'Electricity' ? (
+                <img src={lightningSvg} alt="" width="20" height="20" />
+              ) : bill.category === 'Airtime' ? (
+                '📱'
+              ) : (
+                '📺'
+              )}
             </div>
             <div className="bill-info">
               <p className="bill-name">{bill.name}</p>

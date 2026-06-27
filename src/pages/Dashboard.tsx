@@ -1,6 +1,13 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import ConnectedAccounts from '../components/accounts/ConnectedAccounts';
 import './Dashboard.css';
+import transactionHistorySvg from '../assets/icons/transaction-history.svg';
+import accountAnalysisSvg from '../assets/icons/account-analysis.svg';
+import accountStatementSvg from '../assets/icons/account-statement.svg';
+import quickPayBillsSvg from '../assets/icons/quick-pay-bills.svg';
+import scanQrSvg from '../assets/icons/scan-qr.svg';
+import lightningSvg from '../assets/icons/lightning.svg';
+import phoneSvg from '../assets/icons/phone.svg';
 
 const spendingData = [
   { name: 'Transfer', value: 65, color: '#ef4444' },
@@ -27,23 +34,33 @@ const Dashboard = () => {
         </div>
         <div className="quick-actions-grid">
           <div className="action-card">
-            <div className="action-icon">🧾</div>
+            <div className="action-icon">
+              <img src={transactionHistorySvg} alt="" width="24" height="24" />
+            </div>
             <p>Transaction History</p>
           </div>
           <div className="action-card">
-            <div className="action-icon">📊</div>
+            <div className="action-icon">
+              <img src={accountAnalysisSvg} alt="" width="24" height="24" />
+            </div>
             <p>Account Analysis</p>
           </div>
           <div className="action-card">
-            <div className="action-icon">📥</div>
+            <div className="action-icon">
+              <img src={accountStatementSvg} alt="" width="24" height="24" />
+            </div>
             <p>Account Statement</p>
           </div>
           <div className="action-card">
-            <div className="action-icon">✈️</div>
+            <div className="action-icon">
+              <img src={quickPayBillsSvg} alt="" width="24" height="24" />
+            </div>
             <p>Pay Bills</p>
           </div>
           <div className="action-card">
-            <div className="action-icon">📱</div>
+            <div className="action-icon">
+              <img src={scanQrSvg} alt="" width="24" height="24" />
+            </div>
             <p>Scan QR code</p>
           </div>
           <div className="action-card">
@@ -75,7 +92,9 @@ const Dashboard = () => {
             </div>
             
             <div className="transaction-item">
-              <div className="tx-icon tx-bills">⚡</div>
+              <div className="tx-icon tx-bills">
+              <img src={lightningSvg} alt="" width="16" height="16" />
+            </div>
               <div className="tx-details">
                 <p className="tx-name">Electricity Bill</p>
                 <p className="tx-desc">EEDC Enugu</p>
@@ -111,7 +130,9 @@ const Dashboard = () => {
             </div>
 
             <div className="transaction-item">
-              <div className="tx-icon tx-mobile">📱</div>
+              <div className="tx-icon tx-mobile">
+              <img src={phoneSvg} alt="" width="32" height="32" />
+            </div>
               <div className="tx-details">
                 <p className="tx-name">Airtime Purchase</p>
                 <p className="tx-desc">MTN NG</p>

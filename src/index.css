@@ -13,64 +13,38 @@
   --danger: #EF4444;
 
   /* Purple scale */
-  --purple-10: hsl(0deg 0% 85%);
-  --purple-20: hsl(252deg 53% 82%);
   --purple-30: hsl(253deg 52% 72%);
-  --purple-40: hsl(253deg 52% 63%);
-  --purple-50: hsl(253deg 52% 54%);
   --purple--base: hsl(253, 64%, 45%);
   --purple--60: hsl(253deg 64% 37%);
-  --purple--70: hsl(253deg 64% 37%);
-  --purple-80: hsl(253deg 63% 23%);
-  --purple--90: hsl(252deg 64% 15%);
-  --purple-100: hsl(254deg 65% 9%);
 
   /* Grey scale */
   --grey-20: hsl(0deg 0% 95%);
-  --grey-30: hsl(0deg 0% 93%);
   --grey-40: hsl(0deg 0% 90%);
-  --grey-50: hsl(0deg 0% 87%);
-  --grey-base: hsl(0deg 0% 85%);
   --grey-60: hsl(0deg 0% 71%);
-  --grey-70: hsl(0deg 0% 57%);
   --grey-80: hsl(0deg 0% 43%);
-  --grey-90: hsl(0deg 0% 28%);
   --grey-100: hsl(0deg 0% 17%);
 
-  /* Neutral UI tokens (mapped to grey scale) */
+  /* Neutral UI tokens */
   --text-primary: hsl(0deg 0% 17%);
-  --text-secondary: hsl(0deg 0% 43%);
   --bg-main: hsl(0deg 0% 95%);
-  --bg-surface: #FFFFFF;
-  --border-color: hsl(0deg 0% 90%);
 
   /* Typography — SF Pro on Apple, Inter on Windows/Android */
   --font-family-base: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
 
   /* Spacing scale */
-  --var-0: 0px;
-  --var-1: 4px;
   --var-10: 8px;
-  --var-20: 12px;
   --var-30: 16px;
-  --var-40: 20px;
   --var-50: 24px;
-  --var-60: 28px;
-  --var-70: 32px;
-  --var-80: 36px;
   --var-90: 40px;
-  --var-100: 44px;
-  --var-110: 48px;
-  --var-120: 50px;
 
   /* Border radius scale */
   --radius-sm: 6px;
   --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 12px;
-  --radius-2xl: 14px;
-  --radius-3xl: 16px;
-  --radius-full: 20px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-2xl: 8px;
+  --radius-3xl: 8px;
+  --radius-full: 8px;
 
   /* Shadow scale */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -78,23 +52,9 @@
   --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.06);
 
   /* Typography scale */
-  --h1: 64px;
-  --h2: 60px;
-  --h3: 56px;
-  --h4: 52px;
-  --h5: 48px;
-  --h6: 44px;
-  --h7: 40px;
-  --h8: 36px;
-  --h9: 34px;
-  --h10: 32px;
-  --h11: 28px;
-  --h12: 24px;
-  --body-1: 20px;
   --body-2: 16px;
   --body-3: 14px;
   --body-4: 12px;
-  --body-5: 10px;
 }
 
 *, *::before, *::after {

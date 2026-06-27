@@ -30,7 +30,7 @@
   flex-shrink: 0;
   width: 190px;
   height: 200px;
-  border-radius: 12px;
+  border-radius: 8px;
   background-color: var(--bg-surface);
 }
 
@@ -55,8 +55,8 @@
 }
 
 .account-logo {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;

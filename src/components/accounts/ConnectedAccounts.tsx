@@ -1,4 +1,8 @@
 import './accounts-row.css';
+import zenithLogo from '../../assets/images/zenith.png';
+import accessLogo from '../../assets/images/access.png';
+import opayLogo from '../../assets/images/opay.png';
+import gtbankLogo from '../../assets/images/gtbank.png';
 
 interface BankAccount {
   id: string;
@@ -7,21 +11,13 @@ interface BankAccount {
   balance: number;
   accountType: string;
   status: 'Active' | 'Inactive';
-  logoUrl?: string;
 }
 
-const mockAccounts: BankAccount[] = [
-  { id: '1', bankName: 'Zenith Bank', maskAccount: '**** 1234', balance: 30_000_000, accountType: 'Savings', status: 'Active' },
-  { id: '2', bankName: 'Access Bank', maskAccount: '**** 5678', balance: 100_000_000, accountType: 'Current', status: 'Active' },
-  { id: '3', bankName: 'Opay', maskAccount: '**** 9012', balance: 100_000, accountType: 'Opay Wallet', status: 'Active' },
-  { id: '4', bankName: 'GTBank', maskAccount: '**** 3456', balance: 50_000, accountType: 'Savings', status: 'Active' },
-];
-
 const bankLogos: Record<string, string> = {
-  'Zenith Bank': 'Z',
-  'Access Bank': 'A',
-  'Opay': 'O',
-  'GTBank': 'G',
+  'Zenith Bank': zenithLogo,
+  'Access Bank': accessLogo,
+  'Opay': opayLogo,
+  'GTBank': gtbankLogo,
 };
 
 const logoColors: Record<string, string> = {
@@ -30,6 +26,13 @@ const logoColors: Record<string, string> = {
   'Opay': '#00a85d',
   'GTBank': '#6b3fa0',
 };
+
+const mockAccounts: BankAccount[] = [
+  { id: '1', bankName: 'Zenith Bank', maskAccount: '**** 1234', balance: 30_000_000, accountType: 'Savings Account', status: 'Active' },
+  { id: '2', bankName: 'Access Bank', maskAccount: '**** 5678', balance: 100_000_000, accountType: 'Current Account', status: 'Active' },
+  { id: '3', bankName: 'Opay', maskAccount: '**** 9012', balance: 100_000, accountType: 'Opay Wallet', status: 'Active' },
+  { id: '4', bankName: 'GTBank', maskAccount: '**** 3456', balance: 50_000, accountType: 'Savings Account', status: 'Active' },
+];
 
 function formatCurrency(amount: number): string {
   return `₦${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -40,14 +43,14 @@ interface AccountCardProps {
 }
 
 function AccountCard({ account }: AccountCardProps) {
-  const initial = bankLogos[account.bankName] || account.bankName.charAt(0);
+  const logo = bankLogos[account.bankName];
   const color = logoColors[account.bankName] || '#6b7280';
 
   return (
     <div className="account-card">
       <div className="account-card-top">
         <div className="account-logo" style={{ backgroundColor: color }}>
-          <span>{initial}</span>
+          {logo && <img src={logo} alt={account.bankName} width="24" height="24" />}
         </div>
         <div className="account-info">
           <p className="account-bank-name">{account.bankName}</p>
