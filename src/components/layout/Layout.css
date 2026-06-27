@@ -57,7 +57,16 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  background: none;
   cursor: pointer;
+  padding: 0;
 }
 
 .profile-avatar {
