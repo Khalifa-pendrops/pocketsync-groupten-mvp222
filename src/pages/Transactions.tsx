@@ -5,9 +5,6 @@ import { transactionService, type TransactionQuery } from '../services/transacti
 import { formatSignedNgn, formatTransactionDate } from '../utils/format';
 import './Transactions.css';
 import lightningSvg from '../assets/icons/lightning.svg';
-import transferSvg from '../assets/icons/transfer.svg';
-import { transactionService } from '../services';
-import type { Transaction } from '../types';
 
 const FILTERS = ['All', 'Income', 'Expense', 'Transfer', 'Bills', 'Airtime'] as const;
 type FilterLabel = (typeof FILTERS)[number];

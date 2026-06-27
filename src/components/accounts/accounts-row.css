@@ -1,37 +1,60 @@
 .accounts-inner {
-  max-width: fit-content;
+  width: 100%;
 }
 
+/* Mobile-first: 2-column grid */
 .accounts-row {
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-color) transparent;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
 }
 
-.accounts-row::-webkit-scrollbar {
-  height: 4px;
+/* Tablet+ : horizontal scroll */
+@media (min-width: 768px) {
+  .accounts-row {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+  }
+
+  .accounts-row::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .accounts-row::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .accounts-row::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+  }
 }
 
-.accounts-row::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.accounts-row::-webkit-scrollbar-thumb {
-  background-color: var(--border-color);
-  border-radius: 4px;
-}
-
-/* Shared card dimensions */
+/* Shared card base */
 .account-card,
 .add-account-dashed {
-  flex-shrink: 0;
-  width: 190px;
-  height: 200px;
   border-radius: 8px;
   background-color: var(--bg-surface);
+  min-width: 0;
+}
+
+/* Mobile card sizing */
+.account-card,
+.add-account-dashed {
+  height: 200px;
+}
+
+/* Tablet+ card sizing */
+@media (min-width: 768px) {
+  .account-card,
+  .add-account-dashed {
+    flex-shrink: 0;
+    width: 190px;
+  }
 }
 
 /* Bank account card */

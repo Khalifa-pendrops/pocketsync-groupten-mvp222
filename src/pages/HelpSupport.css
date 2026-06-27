@@ -163,39 +163,50 @@
 
 .contact-section {
   background-color: var(--bg-surface);
-  border: 1px solid #C3C3C3;
-  border-radius: var(--radius-xl);
-  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-2xl);
+  padding: 2.5rem 2rem;
   text-align: center;
+  margin-top: 2.5rem;
 }
 
 .contact-section h2 {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.625rem;
 }
 
 .contact-section p {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
-  margin-bottom: 1.25rem;
-  line-height: 1.4;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .contact-btn {
-  padding: 0.75rem 2rem;
+  display: inline-block;
+  padding: 0.875rem 2.5rem;
   background-color: var(--primary-blue);
   color: #ffffff;
   border: none;
   border-radius: var(--radius-md);
   font-weight: 600;
-  font-size: 0.875rem;
-  transition: background-color 0.2s;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.15s;
 }
 
 .contact-btn:hover {
   background-color: var(--dark-blue);
+  transform: translateY(-1px);
+}
+
+.contact-btn:active {
+  transform: translateY(0);
 }
 
 @media (min-width: 768px) {

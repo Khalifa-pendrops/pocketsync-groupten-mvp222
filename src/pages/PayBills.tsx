@@ -7,6 +7,7 @@ import type { BankAccount } from '../types';
 import { formatAccountType, formatNgn } from '../utils/format';
 import './PayBills.css';
 import lightningSvg from '../assets/icons/lightning.svg';
+import transferSvg from '../assets/icons/transfer.svg';
 
 function BillIcon({ icon }: { icon: BillCatalogItem['icon'] }) {
   if (icon === 'electricity') {

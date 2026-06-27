@@ -93,7 +93,7 @@
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
   background: rgba(99, 63, 199, 0.08);
-  color: var(--purple--60);
+  color: var(--purple-60);
   font-size: var(--body-4);
 }
 
@@ -120,7 +120,7 @@
 }
 
 .auth-submit:hover:not(:disabled) {
-  background: var(--purple--60);
+  background: var(--purple-60);
 }
 
 .auth-submit:disabled {

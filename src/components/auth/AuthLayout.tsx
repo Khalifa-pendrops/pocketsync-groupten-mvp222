@@ -32,9 +32,15 @@ export default function AuthLayout({ title, subtitle, children, footer }: AuthLa
   );
 }
 
-export function AuthLink({ to, children }: { to: string; children: ReactNode }) {
+interface AuthLinkProps {
+  to: string;
+  state?: Record<string, unknown>;
+  children: ReactNode;
+}
+
+export function AuthLink({ to, state, children }: AuthLinkProps) {
   return (
-    <Link to={to} className="auth-link">
+    <Link to={to} state={state} className="auth-link">
       {children}
     </Link>
   );

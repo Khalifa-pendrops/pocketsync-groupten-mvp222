@@ -40,7 +40,7 @@ function AccountCard({ account }: AccountCardProps) {
   );
 }
 
-function AddAccountCard({ onClick }: { onClick: () => void }) {
+function AddAccountCard() {
   return (
     <Link to="/link-accounts" className="add-account-dashed">
       <span className="add-icon-dashed">+</span>

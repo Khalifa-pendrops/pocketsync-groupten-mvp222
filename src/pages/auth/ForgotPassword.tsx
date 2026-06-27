@@ -1,4 +1,5 @@
-import { FormEvent, useState } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import AuthLayout, { AuthLink } from '../../components/auth/AuthLayout';
 import { ApiError } from '../../api/errors';
 import { authService } from '../../services/authService';
