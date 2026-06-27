@@ -1,10 +1,28 @@
-import { Outlet } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
 import Navigation from './Navigation';
 import './Layout.css';
 import notifSvg from '../../assets/icons/notification.svg';
 import profilePic from '../../assets/images/profile-pic.jpg';
+import { useAppDispatch, useAppSelector } from '../../hooks/redux';
+import { tearDownSession } from '../../lib/authFlow';
+import { authService } from '../../services/authService';
 
 const Layout = () => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const user = useAppSelector((state) => state.auth.user);
+
+  async function handleLogout() {
+    try {
+      await authService.logout();
+    } catch {
+      // Session may already be expired — still clear local state.
+    } finally {
+      tearDownSession(dispatch);
+      navigate('/login', { replace: true });
+    }
+  }
+
   return (
     <div className="layout-container">
       <Navigation />
@@ -18,10 +36,12 @@ const Layout = () => {
               <span className="notif-badge">3</span>
             </button>
             <div className="profile-section">
-              <div className="profile-avatar">
-                <img src={profilePic} alt="profile" height="30" width="30" />
-              </div>
-              <span className="profile-name">Johnny English</span>
+              <button type="button" className="profile-button" onClick={handleLogout}>
+                <div className="profile-avatar">
+                  <img src={profilePic} alt="profile" height="30" width="30" />
+                </div>
+                <span className="profile-name">{user?.fullName ?? user?.email ?? 'Account'}</span>
+              </button>
             </div>
           </div>
           <Outlet />

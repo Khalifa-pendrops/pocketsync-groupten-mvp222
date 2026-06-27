@@ -1,0 +1,43 @@
+.onboarding-connect {
+  gap: 1.25rem;
+}
+
+.onboarding-account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.onboarding-account-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--grey-40);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.onboarding-account-row input {
+  margin-top: 0.25rem;
+}
+
+.onboarding-account-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-size: var(--body-4);
+  color: var(--grey-80);
+}
+
+.onboarding-account-info strong {
+  font-size: var(--body-3);
+  color: var(--text-primary);
+}
+
+.onboarding-empty {
+  text-align: center;
+  color: var(--grey-80);
+  font-size: var(--body-4);
+  padding: 1rem 0;
+}

@@ -139,6 +139,14 @@
   align-items: center;
   cursor: pointer;
   transition: border-color 0.2s, background-color 0.2s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.account-logo-initial {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #fff;
 }
 
 .add-account-dashed:hover {

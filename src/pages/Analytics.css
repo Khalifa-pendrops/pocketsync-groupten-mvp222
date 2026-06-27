@@ -26,6 +26,59 @@
   font-size: 0.875rem;
 }
 
+.analytics-period {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.analytics-status {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: 0.5rem 0 1rem;
+}
+
+.analytics-error {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.analytics-error p {
+  margin: 0 0 0.5rem;
+}
+
+.analytics-retry-btn {
+  border: none;
+  background: none;
+  color: var(--primary-blue);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.875rem;
+}
+
+.analytics-tooltip {
+  background: #fff;
+  border: 1px solid var(--grey-40);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  box-shadow: var(--shadow-md);
+}
+
+.analytics-tooltip-label {
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  color: var(--text-primary);
+}
+
+.analytics-tooltip p {
+  margin: 0.125rem 0;
+}
+
 .analytics-summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -1,7 +1,12 @@
-export { apiClient, setAuthToken } from './apiClient';
+export { apiClient } from './apiClient';
 export { authService } from './authService';
+export type { LoginCredentials, RegisterPayload } from './authService';
 export { institutionService } from './institutionService';
 export { accountService } from './accountService';
 export { transactionService } from './transactionService';
 export { budgetService } from './budgetService';
+export { billService } from './billService';
+export type { PayBillPayload } from './billService';
 export { dashboardService } from './dashboardService';
+export { onboardingService } from './onboardingService';
+export type { TransactionQuery, TransactionPage } from './transactionService';

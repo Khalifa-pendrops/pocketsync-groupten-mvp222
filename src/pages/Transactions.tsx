@@ -1,81 +1,228 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ApiError } from '../api/errors';
+import type { TransactionRow } from '../types';
+import { transactionService, type TransactionQuery } from '../services/transactionService';
+import { formatSignedNgn, formatTransactionDate } from '../utils/format';
 import './Transactions.css';
 import lightningSvg from '../assets/icons/lightning.svg';
 
-const filters = ['All', 'Income', 'Expense', 'Transfer', 'Bills', 'Airtime'];
+const FILTERS = ['All', 'Income', 'Expense', 'Transfer', 'Bills', 'Airtime'] as const;
+type FilterLabel = (typeof FILTERS)[number];
 
-const allTransactions = [
-  { id: 1, name: 'Chiamaka Opal', desc: 'Transfer to 0024561190', amount: -150000, date: 'Today, 9:41 AM', type: 'transfer' },
-  { id: 2, name: 'Electricity Bill', desc: 'EEDC Enugu', amount: -75000, date: 'Yesterday, 10:05 AM', type: 'bills' },
-  { id: 3, name: 'Adaeze Okeke', desc: 'Transfer to 0034567890', amount: -200000, date: 'Jun 20, 10:30 AM', type: 'transfer' },
-  { id: 4, name: 'Ifeanyi Uche', desc: 'Transfer from 0045678901', amount: 50000, date: 'Jun 18, 11:15 AM', type: 'receive' },
-  { id: 5, name: 'Airtime Purchase', desc: 'MTN NG', amount: -120000, date: 'Apr 24, 11:45 AM', type: 'airtime' },
-  { id: 6, name: 'NEPA Bill', desc: 'Ikeja Electric', amount: -45000, date: 'Apr 22, 2:30 PM', type: 'bills' },
-  { id: 7, name: 'John Obi', desc: 'Transfer from 0098765432', amount: 150000, date: 'Apr 20, 8:15 AM', type: 'receive' },
-  { id: 8, name: 'Data Bundle', desc: 'Glo NG', amount: -15000, date: 'Apr 19, 6:45 PM', type: 'airtime' },
-];
+const AIRTIME_PATTERN = /airtime|mtn|glo|airtel|data bundle|9mobile/i;
 
-const typeIcon: Record<string, string> = {
-  transfer: '↗',
-  receive: '↙',
-  bills: '⚡',
-  airtime: '📱',
-};
+function filterToQuery(filter: FilterLabel): TransactionQuery {
+  switch (filter) {
+    case 'Income':
+      return { type: 'credit' };
+    case 'Expense':
+      return { type: 'debit' };
+    case 'Transfer':
+      return { category: 'Transfer' };
+    case 'Bills':
+      return { category: 'Bills' };
+    case 'Airtime':
+      return { type: 'debit' };
+    default:
+      return {};
+  }
+}
+
+function badgeClass(tx: TransactionRow): string {
+  if (tx.type === 'credit') {
+    return 'receive';
+  }
+  if (tx.category === 'Bills') {
+    return 'bills';
+  }
+  if (tx.category === 'Transfer') {
+    return 'transfer';
+  }
+  if (AIRTIME_PATTERN.test(tx.description)) {
+    return 'airtime';
+  }
+  return 'transfer';
+}
+
+function matchesAirtime(tx: TransactionRow): boolean {
+  return AIRTIME_PATTERN.test(tx.description) || tx.category === 'Bills' && /mtn|glo|data/i.test(tx.description);
+}
+
+function matchesSearch(tx: TransactionRow, search: string): boolean {
+  const term = search.trim().toLowerCase();
+  if (!term) {
+    return true;
+  }
+
+  return (
+    tx.description.toLowerCase().includes(term) ||
+    tx.institution.toLowerCase().includes(term) ||
+    tx.category.toLowerCase().includes(term)
+  );
+}
 
 const Transactions = () => {
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeFilter, setActiveFilter] = useState<FilterLabel>('All');
+  const [search, setSearch] = useState('');
+  const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = activeFilter === 'All'
-    ? allTransactions
-    : allTransactions.filter((t) => t.type.toLowerCase() === activeFilter.toLowerCase());
+  const fetchPage = useCallback(
+    async (pageNum: number, filter: FilterLabel, append: boolean) => {
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+        setError(null);
+      }
+
+      try {
+        const result = await transactionService.getPage({
+          ...filterToQuery(filter),
+          page: pageNum,
+          limit: 30,
+        });
+
+        setPage(result.page);
+        setPages(result.pages);
+        setTotal(result.total);
+        setTransactions((current) =>
+          append ? [...current, ...result.transactions] : result.transactions,
+        );
+      } catch (err) {
+        const message =
+          err instanceof ApiError ? err.message : 'Failed to load transactions.';
+        setError(message);
+        if (!append) {
+          setTransactions([]);
+        }
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    fetchPage(1, activeFilter, false);
+  }, [activeFilter, fetchPage]);
+
+  const visibleTransactions = useMemo(() => {
+    let rows = transactions;
+
+    if (activeFilter === 'Airtime') {
+      rows = rows.filter(matchesAirtime);
+    }
+
+    return rows.filter((tx) => matchesSearch(tx, search));
+  }, [transactions, activeFilter, search]);
+
+  function handleFilterChange(filter: FilterLabel) {
+    setActiveFilter(filter);
+    setPage(1);
+  }
+
+  function handleLoadMore() {
+    if (page < pages && !loadingMore) {
+      fetchPage(page + 1, activeFilter, true);
+    }
+  }
 
   return (
     <div className="transactions-container">
       <header className="transactions-header">
         <h1>Transactions</h1>
         <p>View your transaction history.</p>
+        {!loading && !error && total > 0 && (
+          <p className="transactions-count">{total} transaction{total === 1 ? '' : 's'}</p>
+        )}
       </header>
 
       <div className="filter-bar">
-        {filters.map((f) => (
+        {FILTERS.map((filter) => (
           <button
-            key={f}
-            className={`filter-btn${activeFilter === f ? ' active' : ''}`}
-            onClick={() => setActiveFilter(f)}
+            key={filter}
+            type="button"
+            className={`filter-btn${activeFilter === filter ? ' active' : ''}`}
+            onClick={() => handleFilterChange(filter)}
           >
-            {f}
+            {filter}
           </button>
         ))}
       </div>
 
       <div className="transactions-search">
         <span className="search-icon">🔍</span>
-        <input type="text" placeholder="Search transactions..." />
+        <input
+          type="text"
+          placeholder="Search transactions..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
       </div>
 
+      {loading && <p className="transactions-status">Loading transactions…</p>}
+
+      {error && (
+        <div className="transactions-error">
+          <p>{error}</p>
+          <button type="button" className="transactions-retry-btn" onClick={() => fetchPage(1, activeFilter, false)}>
+            Try again
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && visibleTransactions.length === 0 && (
+        <p className="transactions-status">No transactions match your filters.</p>
+      )}
+
       <div className="transactions-list">
-        {filtered.map((tx) => (
-          <div key={tx.id} className="transaction-row">
-            <div className={`tx-badge ${tx.type}`}>
-              {tx.type === 'bills' ? (
-                <img src={lightningSvg} alt="" width="16" height="16" />
-              ) : (
-                typeIcon[tx.type] || '💳'
-              )}
+        {visibleTransactions.map((tx) => {
+          const badge = badgeClass(tx);
+
+          return (
+            <div key={tx.id} className="transaction-row">
+              <div className={`tx-badge ${badge}`}>
+                {badge === 'bills' ? (
+                  <img src={lightningSvg} alt="" width="16" height="16" />
+                ) : badge === 'receive' ? (
+                  '↙'
+                ) : badge === 'airtime' ? (
+                  '📱'
+                ) : (
+                  '↗'
+                )}
+              </div>
+              <div className="tx-row-info">
+                <p className="tx-row-name">{tx.description}</p>
+                <p className="tx-row-desc">
+                  {tx.institution} · {tx.category}
+                </p>
+              </div>
+              <div className="tx-row-right">
+                <p className={`tx-row-amount ${tx.type === 'credit' ? 'positive' : 'negative'}`}>
+                  {formatSignedNgn(tx.amount, tx.type)}
+                </p>
+                <p className="tx-row-date">{formatTransactionDate(tx.date)}</p>
+              </div>
             </div>
-            <div className="tx-row-info">
-              <p className="tx-row-name">{tx.name}</p>
-              <p className="tx-row-desc">{tx.desc}</p>
-            </div>
-            <div className="tx-row-right">
-              <p className={`tx-row-amount ${tx.amount > 0 ? 'positive' : 'negative'}`}>
-                {tx.amount > 0 ? '+' : '-'}₦{Math.abs(tx.amount).toLocaleString()}
-              </p>
-              <p className="tx-row-date">{tx.date}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {!loading && !error && page < pages && (
+        <div className="transactions-load-more">
+          <button type="button" className="load-more-btn" onClick={handleLoadMore} disabled={loadingMore}>
+            {loadingMore ? 'Loading…' : `Load more (${page} of ${pages})`}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

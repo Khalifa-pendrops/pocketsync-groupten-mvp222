@@ -1,5 +1,14 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { ApiError } from '../api/errors';
+import type { ApiTransaction, DashboardSummaryResponse } from '../api/types';
+import { mapLinkedAccount } from '../api/mappers';
 import ConnectedAccounts from '../components/accounts/ConnectedAccounts';
+import { CATEGORY_COLORS } from '../constants/institutions';
+import { useAppSelector } from '../hooks/redux';
+import { dashboardService } from '../services/dashboardService';
+import { formatNgn, formatSignedNgn, formatTransactionDate } from '../utils/format';
 import './Dashboard.css';
 import transactionHistorySvg from '../assets/icons/transaction-history.svg';
 import accountAnalysisSvg from '../assets/icons/account-analysis.svg';
@@ -9,54 +18,156 @@ import scanQrSvg from '../assets/icons/scan-qr.svg';
 import lightningSvg from '../assets/icons/lightning.svg';
 import phoneSvg from '../assets/icons/phone.svg';
 
-const spendingData = [
-  { name: 'Transfer', value: 65, color: '#ef4444' },
-  { name: 'Bills', value: 45, color: '#9333ea' },
-  { name: 'Receive', value: 20, color: '#10b981' },
-  { name: 'Others', value: 9, color: '#6b7280' },
-];
+interface SpendingSlice {
+  name: string;
+  value: number;
+  amount: number;
+  color: string;
+}
+
+function buildSpendingData(breakdown: DashboardSummaryResponse['expenseBreakdown']): SpendingSlice[] {
+  const total = breakdown.reduce((sum, item) => sum + item.amount, 0);
+
+  if (total <= 0) {
+    return [];
+  }
+
+  return breakdown.map((item) => ({
+    name: item.category,
+    amount: item.amount,
+    value: Math.round((item.amount / total) * 100),
+    color: CATEGORY_COLORS[item.category] ?? '#6b7280',
+  }));
+}
+
+function buildRecommendation(summary: DashboardSummaryResponse): string | null {
+  const wallet = summary.accounts
+    .filter((account) => account.accountType === 'wallet' && account.balance > 0)
+    .sort((a, b) => b.balance - a.balance)[0];
+
+  if (!wallet) {
+    return null;
+  }
+
+  return `Use ${wallet.institution} (${formatNgn(wallet.balance)}) for airtime and paying bills — it has available funds and lower applicable charges.`;
+}
+
+function transactionIcon(category: string, type: ApiTransaction['type']) {
+  if (category === 'Bills') {
+    return (
+      <div className="tx-icon tx-bills">
+        <img src={lightningSvg} alt="" width="16" height="16" />
+      </div>
+    );
+  }
+
+  if (category === 'Food' || category === 'Entertainment') {
+    return (
+      <div className="tx-icon tx-mobile">
+        <img src={phoneSvg} alt="" width="32" height="32" />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`tx-icon ${type === 'credit' ? 'tx-receive' : 'tx-transfer'}`}>
+      {type === 'credit' ? '↙' : '↗'}
+    </div>
+  );
+}
 
 const Dashboard = () => {
+  const user = useAppSelector((state) => state.auth.user);
+  const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadSummary = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await dashboardService.getSummary();
+      setSummary(data);
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to load dashboard data.';
+      setError(message);
+      setSummary(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
+
+  const accounts = useMemo(
+    () => (summary ? summary.accounts.map(mapLinkedAccount) : []),
+    [summary],
+  );
+
+  const spendingData = useMemo(
+    () => (summary ? buildSpendingData(summary.expenseBreakdown) : []),
+    [summary],
+  );
+
+  const recommendation = useMemo(
+    () => (summary ? buildRecommendation(summary) : null),
+    [summary],
+  );
+
+  const firstName = user?.fullName?.split(' ')[0] ?? 'there';
+
   return (
     <div className="dashboard-container">
-      {/* Header */}
       <header className="dashboard-header">
-        <h1 className="greeting">Good day, English 👋</h1>
-        <p className="subtitle">Here's what's happening to your money today.</p>
+        <h1 className="greeting">Good day, {firstName} 👋</h1>
+        <p className="subtitle">Here&apos;s what&apos;s happening to your money today.</p>
+        {summary && (
+          <p className="dashboard-balance-line">
+            Total balance: <strong>{formatNgn(summary.totalBalance)}</strong>
+          </p>
+        )}
       </header>
 
-      <ConnectedAccounts />
+      <ConnectedAccounts
+        accounts={accounts}
+        loading={loading}
+        error={error}
+        onRetry={loadSummary}
+      />
 
-      {/* Quick Actions */}
       <section className="dashboard-section">
         <div className="section-header">
           <h2>Quick Actions</h2>
         </div>
         <div className="quick-actions-grid">
-          <div className="action-card">
+          <Link to="/transactions" className="action-card">
             <div className="action-icon">
               <img src={transactionHistorySvg} alt="" width="24" height="24" />
             </div>
             <p>Transaction History</p>
-          </div>
-          <div className="action-card">
+          </Link>
+          <Link to="/analytics" className="action-card">
             <div className="action-icon">
               <img src={accountAnalysisSvg} alt="" width="24" height="24" />
             </div>
             <p>Account Analysis</p>
-          </div>
+          </Link>
           <div className="action-card">
             <div className="action-icon">
               <img src={accountStatementSvg} alt="" width="24" height="24" />
             </div>
             <p>Account Statement</p>
           </div>
-          <div className="action-card">
+          <Link to="/pay-bills" className="action-card">
             <div className="action-icon">
               <img src={quickPayBillsSvg} alt="" width="24" height="24" />
             </div>
             <p>Pay Bills</p>
-          </div>
+          </Link>
           <div className="action-card">
             <div className="action-icon">
               <img src={scanQrSvg} alt="" width="24" height="24" />
@@ -70,148 +181,117 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Main Grid for Transactions and Overview */}
       <div className="dashboard-main-grid">
-        {/* Recent Transactions */}
         <section className="dashboard-section transactions-section">
           <div className="section-header">
             <h2>Recent Transaction</h2>
-            <a href="#" className="view-all">View all</a>
+            <Link to="/transactions" className="view-all">
+              View all
+            </Link>
           </div>
+
           <div className="transactions-card">
-            <div className="transaction-item">
-              <div className="tx-icon tx-transfer">↗</div>
-              <div className="tx-details">
-                <p className="tx-name">Chiamaka Opal</p>
-                <p className="tx-desc">Transfer to 0024561190</p>
-              </div>
-              <div className="tx-amount-time">
-                <p className="tx-amount tx-negative">-₦150,000.00</p>
-                <p className="tx-time">Today, 9:41 AM</p>
-              </div>
-            </div>
-            
-            <div className="transaction-item">
-              <div className="tx-icon tx-bills">
-              <img src={lightningSvg} alt="" width="16" height="16" />
-            </div>
-              <div className="tx-details">
-                <p className="tx-name">Electricity Bill</p>
-                <p className="tx-desc">EEDC Enugu</p>
-              </div>
-              <div className="tx-amount-time">
-                <p className="tx-amount tx-negative">-₦75,000.00</p>
-                <p className="tx-time">Yesterday, 10:05 AM</p>
-              </div>
-            </div>
+            {loading && <p className="dashboard-status">Loading transactions…</p>}
 
-            <div className="transaction-item">
-              <div className="tx-icon tx-transfer">↗</div>
-              <div className="tx-details">
-                <p className="tx-name">Adaeze Okeke</p>
-                <p className="tx-desc">Transfer to 0034567890</p>
+            {!loading && error && (
+              <div className="dashboard-error">
+                <p>{error}</p>
+                <button type="button" className="dashboard-retry-btn" onClick={loadSummary}>
+                  Try again
+                </button>
               </div>
-              <div className="tx-amount-time">
-                <p className="tx-amount tx-negative">-₦200,000.00</p>
-                <p className="tx-time">Jun 20, 10:30 AM</p>
-              </div>
-            </div>
+            )}
 
-            <div className="transaction-item">
-              <div className="tx-icon tx-receive">↙</div>
-              <div className="tx-details">
-                <p className="tx-name">Ifeanyi Uche</p>
-                <p className="tx-desc">Transfer to 0045678901</p>
-              </div>
-              <div className="tx-amount-time">
-                <p className="tx-amount tx-positive">+₦50,000.00</p>
-                <p className="tx-time">Jun 18, 11:15 AM</p>
-              </div>
-            </div>
+            {!loading && !error && summary?.recentTransactions.length === 0 && (
+              <p className="dashboard-status">No recent transactions yet.</p>
+            )}
 
-            <div className="transaction-item">
-              <div className="tx-icon tx-mobile">
-              <img src={phoneSvg} alt="" width="32" height="32" />
-            </div>
-              <div className="tx-details">
-                <p className="tx-name">Airtime Purchase</p>
-                <p className="tx-desc">MTN NG</p>
-              </div>
-              <div className="tx-amount-time">
-                <p className="tx-amount tx-negative">-₦120,000.00</p>
-                <p className="tx-time">Apr 24, 11:45 AM</p>
-              </div>
-            </div>
+            {!loading &&
+              !error &&
+              summary?.recentTransactions.map((tx) => (
+                <div key={tx.id} className="transaction-item">
+                  {transactionIcon(tx.category, tx.type)}
+                  <div className="tx-details">
+                    <p className="tx-name">{tx.description}</p>
+                    <p className="tx-desc">
+                      {tx.institution} · {tx.category}
+                    </p>
+                  </div>
+                  <div className="tx-amount-time">
+                    <p
+                      className={`tx-amount ${tx.type === 'credit' ? 'tx-positive' : 'tx-negative'}`}
+                    >
+                      {formatSignedNgn(tx.amount, tx.type)}
+                    </p>
+                    <p className="tx-time">{formatTransactionDate(tx.date)}</p>
+                  </div>
+                </div>
+              ))}
           </div>
         </section>
 
-        {/* Right Column: Spending Overview & Recommendations */}
         <div className="dashboard-right-col">
           <section className="dashboard-section">
             <div className="section-header">
               <h2>Spending Overview</h2>
-              <select className="date-dropdown">
-                <option value="">This Month</option>
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-              </select>
+              <span className="date-dropdown">Last 30 days</span>
             </div>
             <div className="spending-card">
-              <div className="chart-container">
-                <div className="chart-area">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={spendingData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={35}
-                        outerRadius={55}
-                        paddingAngle={0}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {spendingData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="chart-legend">
-                  {spendingData.map((item, index) => (
-                    <div key={index} className="legend-item">
-                      <div className="legend-color-label">
-                        <span className="color-dot" style={{ backgroundColor: item.color }}></span>
-                        <span className="legend-name">{item.name}</span>
+              {loading && <p className="dashboard-status">Loading spending data…</p>}
+
+              {!loading && spendingData.length === 0 && (
+                <p className="dashboard-status">No spending data for this period.</p>
+              )}
+
+              {!loading && spendingData.length > 0 && (
+                <div className="chart-container">
+                  <div className="chart-area">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={spendingData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={35}
+                          outerRadius={55}
+                          paddingAngle={0}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {spendingData.map((entry) => (
+                            <Cell key={entry.name} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="chart-legend">
+                    {spendingData.map((item) => (
+                      <div key={item.name} className="legend-item">
+                        <div className="legend-color-label">
+                          <span className="color-dot" style={{ backgroundColor: item.color }} />
+                          <span className="legend-name">{item.name}</span>
+                        </div>
+                        <span className="legend-value">{item.value}%</span>
                       </div>
-                      <span className="legend-value">{item.value}%</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 
-          <section className="dashboard-section recommendation-section">
-            <div className="recommendation-card">
-              <h3>Recommendation</h3>
-              <p>
-                Use Opay (₦100,000.00) for airtime and paying bills because it has sufficient funds and lower applicable charges
-              </p>
-              <button className="got-it-btn">Got it</button>
-            </div>
-          </section>
+          {recommendation && (
+            <section className="dashboard-section recommendation-section">
+              <div className="recommendation-card">
+                <h3>Recommendation</h3>
+                <p>{recommendation}</p>
+                <button type="button" className="got-it-btn">
+                  Got it
+                </button>
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </div>
