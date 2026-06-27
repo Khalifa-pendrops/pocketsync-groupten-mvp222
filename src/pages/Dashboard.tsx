@@ -103,7 +103,7 @@ const Dashboard = () => {
   useEffect(() => {
     loadSummary();
   }, [loadSummary]);
-
+//todo I CAN HEAR YOU GUYS, NETWORK ISSUES. also i will ignore your whatsapp message iniobong, so dont bother,prosper say YES if you see this, I CAN HEAR YOU
   const accounts = useMemo(
     () => (summary ? summary.accounts.map(mapLinkedAccount) : []),
     [summary],
