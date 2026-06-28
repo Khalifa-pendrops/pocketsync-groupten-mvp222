@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import './Navigation.css';
 import logoSvg from '../../assets/icons/logo.svg';
+import sideIcon from '../../assets/images/side-icon.png';
 import dashboardSvg from '../../assets/icons/dashboard.svg';
 import linkAccountsSvg from '../../assets/icons/link-accounts.svg';
 import transactionsSvg from '../../assets/icons/transactions.svg';
@@ -14,11 +15,15 @@ const Navigation = () => {
     <nav className="navigation">
       <div className="nav-brand">
         <span className="brand-icon">
-          <img src={logoSvg} alt="PocketSync" width="36" height="38" />
+          <img src={logoSvg} alt="" width="36" height="38" />
         </span>
+        <span className="brand-name">PocketSync</span>
       </div>
 
       <div className="nav-links-container">
+        <div className="nav-side-decor" aria-hidden="true">
+          <img src={sideIcon} alt="" className="nav-side-decor-img" />
+        </div>
         <div className="nav-group">
           <NavLink to="/" end className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <span className="nav-icon"><img src={dashboardSvg} alt="" width="18" height="18" /></span>
@@ -44,11 +49,17 @@ const Navigation = () => {
             <span className="nav-icon"><img src={helpSupportSvg} alt="" width="18" height="18" /></span>
             <span className="nav-text">Help and support</span>
           </NavLink>
-          <NavLink to="/settings" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            <span className="nav-icon"><img src={settingsSvg} alt="" width="18" height="18" /></span>
-            <span className="nav-text">Settings</span>
-          </NavLink>
         </div>
+      </div>
+
+      <div className="nav-bottom">
+        <NavLink
+          to="/settings"
+          className={({ isActive }) => (isActive ? 'nav-settings-btn active' : 'nav-settings-btn')}
+        >
+          <span className="nav-icon"><img src={settingsSvg} alt="" width="18" height="18" /></span>
+          <span className="nav-text">Settings</span>
+        </NavLink>
       </div>
     </nav>
   );
