@@ -37,6 +37,10 @@ const Navigation = () => {
             <span className="nav-icon"><img src={transactionsSvg} alt="" width="18" height="18" /></span>
             <span className="nav-text">Transactions</span>
           </NavLink>
+          <NavLink to="/transfer" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+            <span className="nav-icon"><img src={linkAccountsSvg} alt="" width="18" height="18" /></span>
+            <span className="nav-text">Transfer</span>
+          </NavLink>
           <NavLink to="/analytics" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <span className="nav-icon"><img src={analyticsSvg} alt="" width="18" height="18" /></span>
             <span className="nav-text">Analytics</span>

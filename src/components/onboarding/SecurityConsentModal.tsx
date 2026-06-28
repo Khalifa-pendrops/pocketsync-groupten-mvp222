@@ -10,7 +10,7 @@ const COMPLIANCE_ITEMS = [
     icon: shieldLockIcon,
     title: 'NDPR Compliant',
     description:
-      'We comply with the Nigeria Data Protection Regulation (NDPR) to ensure your personal data is protected.',
+      'We follow the Nigeria Data Protection Regulation (NDPR) for personal data.',
   },
   {
     icon: buildingIcon,
@@ -20,15 +20,14 @@ const COMPLIANCE_ITEMS = [
   },
   {
     icon: lockIcon,
-    title: 'Secure & Encrypted',
-    description:
-      'Your data is encrypted in transit and at rest using industry-standard encryption (256-bit SSL).',
+    title: 'Encrypted',
+    description: 'Your data is encrypted in transit and at rest.',
   },
   {
     icon: checkCircleIcon,
-    title: 'Your Privacy Matters',
+    title: 'Privacy',
     description:
-      'We do not sell or share your personal or financial data with third parties without your consent.',
+      'We do not sell your personal or financial data without your consent.',
   },
 ] as const;
 
@@ -74,10 +73,9 @@ export default function SecurityConsentModal({
         </div>
 
         <header className="security-consent-header">
-          <h2 id="security-consent-title">Your Security is Our Priority</h2>
+          <h2 id="security-consent-title">Before you connect</h2>
           <p>
-            At PocketSync, we are committed to protecting your data and your privacy. Before
-            you connect your account, please review how we handle your information.
+            Review how PocketSync handles your data before linking an account.
           </p>
         </header>
 

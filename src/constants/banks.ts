@@ -1,0 +1,16 @@
+export const RECIPIENT_BANKS = [
+  'Access Bank',
+  'GTBank',
+  'Kuda',
+  'Opay',
+  'Moniepoint',
+  'UBA',
+  'Zenith Bank',
+  'First Bank',
+  'Fidelity Bank',
+  'Stanbic IBTC',
+  'Union Bank',
+  'Sterling Bank',
+  'Wema Bank',
+  'Polaris Bank',
+] as const;

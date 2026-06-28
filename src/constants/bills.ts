@@ -11,7 +11,6 @@ export interface BillCatalogItem {
   icon: 'electricity' | 'airtime' | 'tv' | 'internet';
 }
 
-/** MVP bill catalog — payments use POST /transactions/pay-bill (no bill-list API). */
 export const BILL_CATALOG: BillCatalogItem[] = [
   {
     id: 'eedc',

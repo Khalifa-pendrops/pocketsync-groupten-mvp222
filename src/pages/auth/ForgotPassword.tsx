@@ -49,7 +49,7 @@ export default function ForgotPassword() {
         {error && <div className="auth-error">{error}</div>}
         {devOtp && (
           <div className="auth-dev-hint">
-            Dev OTP: <strong>{devOtp}</strong> — use it on the reset page.
+            Test code: <strong>{devOtp}</strong>
           </div>
         )}
 

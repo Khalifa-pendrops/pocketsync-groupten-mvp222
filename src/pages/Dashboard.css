@@ -95,7 +95,6 @@
   white-space: nowrap;
 }
 
-/* Quick Actions */
 .quick-actions-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -123,6 +122,8 @@
   box-shadow: var(--shadow-md);
   text-decoration: none;
   color: inherit;
+  font: inherit;
+  width: 100%;
 }
 
 .action-card:hover {
@@ -149,7 +150,6 @@
   margin: 0;
 }
 
-/* Main Grid Layout */
 .dashboard-main-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -238,7 +238,22 @@
   border: 1px solid #C3C3C3;
   font-size: 0.875rem;
   background-color: var(--bg-surface);
-  color:#2b2b2b;
+  color: #2b2b2b;
+}
+
+.date-dropdown-select {
+  cursor: pointer;
+  appearance: none;
+  padding-right: 1.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232b2b2b' d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  min-width: 7.5rem;
+}
+
+.date-dropdown-select:focus {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 1px;
 }
 
 .spending-card {

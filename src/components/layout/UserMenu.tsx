@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import profilePic from '../../assets/images/profile-pic.jpg';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { tearDownSession } from '../../lib/authFlow';
 import { authService } from '../../services/authService';
@@ -38,13 +37,16 @@ export default function UserMenu() {
     };
   }, [open]);
 
+  const displayName = user?.fullName ?? user?.email ?? 'Account';
+  const avatarInitial = displayName.trim().charAt(0).toUpperCase() || 'A';
+
   async function handleLogout() {
     setOpen(false);
 
     try {
       await authService.logout();
     } catch {
-      // Session may already be expired — still clear local state.
+
     } finally {
       tearDownSession(dispatch);
       navigate('/login', { replace: true });
@@ -54,10 +56,10 @@ export default function UserMenu() {
   return (
     <div className={`user-menu${open ? ' user-menu--open' : ''}`} ref={menuRef}>
       <div className="user-menu-trigger">
-        <div className="profile-avatar">
-          <img src={profilePic} alt="" height="30" width="30" />
+        <div className="profile-avatar" aria-hidden="true">
+          <span className="profile-avatar-initial">{avatarInitial}</span>
         </div>
-        <span className="profile-name">{user?.fullName ?? user?.email ?? 'Account'}</span>
+        <span className="profile-name">{displayName}</span>
         <button
           type="button"
           className="user-menu-toggle"

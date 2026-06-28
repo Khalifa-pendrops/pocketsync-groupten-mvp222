@@ -131,7 +131,7 @@ export default function VerifyEmail() {
         {error && <div className="otp-error">{error}</div>}
         {devOtp && (
           <div className="otp-dev-hint">
-            Dev OTP: <strong>{devOtp}</strong>
+            Test code: <strong>{devOtp}</strong>
           </div>
         )}
 

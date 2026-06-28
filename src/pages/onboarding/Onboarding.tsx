@@ -89,7 +89,7 @@ export default function Onboarding() {
           setMaskedPhone(status.maskedPhone);
         }
       } catch {
-        // Non-blocking — subtitle falls back to generic copy.
+
       }
     }
 
@@ -338,8 +338,7 @@ export default function Onboarding() {
             <div className="onboarding-security-note">
               <img src={lockIcon} alt="" width="18" height="18" aria-hidden="true" />
               <span>
-                Your BVN IS required to verify your identity and securely connect your bank
-                account.
+                Your BVN is required to verify your identity and connect your bank account.
               </span>
             </div>
 
@@ -388,7 +387,7 @@ export default function Onboarding() {
           {error && <div className="onboarding-error">{error}</div>}
           {devOtp && (
             <div className="onboarding-dev-hint">
-              Dev OTP: <strong>{devOtp}</strong>
+              Test code: <strong>{devOtp}</strong>
             </div>
           )}
 
