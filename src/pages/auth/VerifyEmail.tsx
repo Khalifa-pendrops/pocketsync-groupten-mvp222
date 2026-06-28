@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { type SubmitEvent, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/errors';
 import AuthLayout, { AuthLink } from '../../components/auth/AuthLayout';
@@ -23,7 +23,7 @@ export default function VerifyEmail() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
 
-  async function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
     setError('');
     setLoading(true);
@@ -72,7 +72,7 @@ export default function VerifyEmail() {
       subtitle="Enter the 6-digit code sent to your inbox."
       footer={
         <>
-          Verified already? <AuthLink to="/login">Sign in</AuthLink>
+          Verified already? <AuthLink to="/login">Log In</AuthLink>
         </>
       }
     >
@@ -86,10 +86,11 @@ export default function VerifyEmail() {
         )}
 
         <div className="auth-field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">Email or Phone</label>
           <input
             id="email"
             type="email"
+            placeholder="you@example.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -103,6 +104,7 @@ export default function VerifyEmail() {
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
+            placeholder="000000"
             value={code}
             onChange={(event) => setCode(event.target.value)}
             maxLength={6}

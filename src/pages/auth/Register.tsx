@@ -1,7 +1,8 @@
-import { FormEvent, useState } from 'react';
+import { type SubmitEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/errors';
 import AuthLayout, { AuthLink } from '../../components/auth/AuthLayout';
+import PasswordInput from '../../components/auth/PasswordInput';
 import { authService } from '../../services/authService';
 
 function goToVerify(
@@ -27,7 +28,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
     setError('');
     setLoading(true);
@@ -65,7 +66,7 @@ export default function Register() {
       subtitle="Start consolidating your finances in one place."
       footer={
         <>
-          Already have an account? <AuthLink to="/login">Sign in</AuthLink>
+          Already have an account? <AuthLink to="/login">Log In</AuthLink>
           {' · '}
           <AuthLink to="/verify-email">Verify email</AuthLink>
         </>
@@ -80,6 +81,7 @@ export default function Register() {
             id="fullName"
             type="text"
             autoComplete="name"
+            placeholder="Jane Doe"
             value={fullName}
             onChange={(event) => setFullName(event.target.value)}
             required
@@ -87,11 +89,12 @@ export default function Register() {
         </div>
 
         <div className="auth-field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">Email or Phone</label>
           <input
             id="email"
             type="email"
             autoComplete="email"
+            placeholder="you@example.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -100,10 +103,10 @@ export default function Register() {
 
         <div className="auth-field">
           <label htmlFor="password">Password</label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
+            placeholder="At least 8 characters"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             minLength={8}
@@ -113,10 +116,10 @@ export default function Register() {
 
         <div className="auth-field">
           <label htmlFor="confirmPassword">Confirm password</label>
-          <input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             autoComplete="new-password"
+            placeholder="Re-enter your password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             minLength={8}

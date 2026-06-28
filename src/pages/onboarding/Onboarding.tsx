@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { type SubmitEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/errors';
 import type { ApiDiscoveredAccount, OnboardingStep } from '../../api/types';
@@ -71,7 +71,7 @@ export default function Onboarding() {
     };
   }, [step]);
 
-  async function handleBvnSubmit(event: FormEvent) {
+  async function handleBvnSubmit(event: SubmitEvent) {
     event.preventDefault();
     setError('');
     setLoading(true);
@@ -92,7 +92,7 @@ export default function Onboarding() {
     }
   }
 
-  async function handleVerifyOtp(event: FormEvent) {
+  async function handleVerifyOtp(event: SubmitEvent) {
     event.preventDefault();
     setError('');
     setLoading(true);
@@ -127,7 +127,7 @@ export default function Onboarding() {
     }
   }
 
-  async function handleConnect(event: FormEvent) {
+  async function handleConnect(event: SubmitEvent) {
     event.preventDefault();
     setError('');
     setLoading(true);
