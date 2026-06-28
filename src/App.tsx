@@ -10,8 +10,7 @@ import VerifyEmail from './pages/auth/VerifyEmail';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import Onboarding from './pages/onboarding/Onboarding';
-
-const Dashboard = lazy(() => import('./pages/Dashboard'));
+import Dashboard from './pages/Dashboard';
 const LinkAccounts = lazy(() => import('./pages/LinkAccounts'));
 const Transactions = lazy(() => import('./pages/Transactions'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -38,7 +37,7 @@ function App() {
 
           <Route element={<ProtectedRoute requireOnboardingComplete />}>
             <Route path="/" element={<Layout />}>
-              <Route index element={<Suspense fallback={null}><Dashboard /></Suspense>} />
+              <Route index element={<Dashboard />} />
               <Route path="link-accounts" element={<Suspense fallback={null}><LinkAccounts /></Suspense>} />
               <Route path="transactions" element={<Suspense fallback={null}><Transactions /></Suspense>} />
               <Route path="analytics" element={<Suspense fallback={null}><Analytics /></Suspense>} />

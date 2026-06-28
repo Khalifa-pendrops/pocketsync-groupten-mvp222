@@ -26,7 +26,10 @@
 
   /* Neutral UI tokens */
   --text-primary: hsl(0deg 0% 17%);
+  --text-secondary: hsl(0deg 0% 43%);
   --bg-main: hsl(0deg 0% 95%);
+  --bg-surface: #ffffff;
+  --border-color: hsl(0deg 0% 90%);
 
   /* Typography — SF Pro on Apple, Inter on Windows/Android */
   --font-family-base: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
