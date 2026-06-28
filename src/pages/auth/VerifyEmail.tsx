@@ -1,13 +1,22 @@
-import { type SubmitEvent, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/errors';
-import AuthLayout, { AuthLink } from '../../components/auth/AuthLayout';
+import OtpInput from '../../components/auth/OtpInput';
+import OtpLayout from '../../components/auth/OtpLayout';
 import { authService } from '../../services/authService';
+
+const DEFAULT_RESEND_SECONDS = 30;
 
 interface VerifyEmailState {
   email?: string;
   message?: string;
   devOtp?: string;
+  resendAvailableIn?: number;
+}
+
+function formatCountdown(seconds: number): string {
+  const padded = Math.max(0, seconds).toString().padStart(2, '0');
+  return `00.${padded}`;
 }
 
 export default function VerifyEmail() {
@@ -15,48 +24,92 @@ export default function VerifyEmail() {
   const location = useLocation();
   const routeState = (location.state as VerifyEmailState | null) ?? {};
 
-  const [email, setEmail] = useState(routeState.email ?? '');
+  const [email] = useState(routeState.email ?? '');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
-  const [info, setInfo] = useState(routeState.message ?? '');
   const [devOtp, setDevOtp] = useState<string | null>(routeState.devOtp ?? null);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(
+    routeState.resendAvailableIn ?? DEFAULT_RESEND_SECONDS,
+  );
 
-  async function handleSubmit(event: SubmitEvent) {
-    event.preventDefault();
+  const verifyInFlight = useRef(false);
+
+  useEffect(() => {
+    if (!email) {
+      navigate('/register', { replace: true });
+    }
+  }, [email, navigate]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setSecondsLeft((current) => (current <= 0 ? 0 : current - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  async function verifyOtpCode(nextCode: string) {
+    if (nextCode.length !== 6 || !email || verifyInFlight.current) {
+      return;
+    }
+
+    verifyInFlight.current = true;
     setError('');
     setLoading(true);
 
     try {
-      await authService.verifyOtp({ email, code, purpose: 'signup' });
+      await authService.verifyOtp({ email, code: nextCode, purpose: 'signup' });
       navigate('/login', {
         replace: true,
         state: { message: 'Email verified. You can sign in now.' },
       });
     } catch (err) {
+      verifyInFlight.current = false;
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
         setError('Verification failed. Please try again.');
       }
+      setCode('');
     } finally {
       setLoading(false);
     }
   }
 
+  function handleCodeChange(nextCode: string) {
+    setCode(nextCode);
+    if (nextCode.length === 6) {
+      void verifyOtpCode(nextCode);
+    }
+  }
+
   async function handleResend() {
+    if (secondsLeft > 0 || resending || !email) {
+      return;
+    }
+
     setError('');
     setResending(true);
 
     try {
       const response = await authService.sendOtp(email, 'signup');
-      setInfo(response.message);
       if ('devOtp' in response && typeof response.devOtp === 'string') {
         setDevOtp(response.devOtp);
       }
+      const cooldown =
+        'resendAvailableIn' in response && typeof response.resendAvailableIn === 'number'
+          ? response.resendAvailableIn
+          : DEFAULT_RESEND_SECONDS;
+      setSecondsLeft(cooldown);
+      setCode('');
+      verifyInFlight.current = false;
     } catch (err) {
       if (err instanceof ApiError) {
+        if (typeof err.body.resendAvailableIn === 'number') {
+          setSecondsLeft(err.body.resendAvailableIn);
+        }
         setError(err.message);
       } else {
         setError('Unable to resend code.');
@@ -66,65 +119,41 @@ export default function VerifyEmail() {
     }
   }
 
+  if (!email) {
+    return null;
+  }
+
   return (
-    <AuthLayout
-      title="Verify your email"
-      subtitle="Enter the 6-digit code sent to your inbox."
-      footer={
-        <>
-          Verified already? <AuthLink to="/login">Log In</AuthLink>
-        </>
-      }
+    <OtpLayout
+      backTo="/register"
+      title="Verify your account"
+      subtitle="Enter the 6-digit code sent to your email"
     >
-      <form className="auth-form" onSubmit={handleSubmit}>
-        {info && <div className="auth-info">{info}</div>}
-        {error && <div className="auth-error">{error}</div>}
+      <div className="otp-body">
+        {error && <div className="otp-error">{error}</div>}
         {devOtp && (
-          <div className="auth-dev-hint">
+          <div className="otp-dev-hint">
             Dev OTP: <strong>{devOtp}</strong>
           </div>
         )}
 
-        <div className="auth-field">
-          <label htmlFor="email">Email or Phone</label>
-          <input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </div>
+        <OtpInput value={code} onChange={handleCodeChange} disabled={loading} />
 
-        <div className="auth-field">
-          <label htmlFor="code">Verification code</label>
-          <input
-            id="code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            placeholder="000000"
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            maxLength={6}
-            required
-          />
-        </div>
-
-        <button type="submit" className="auth-submit" disabled={loading}>
-          {loading ? 'Verifying…' : 'Verify email'}
-        </button>
-
-        <button
-          type="button"
-          className="auth-secondary"
-          onClick={handleResend}
-          disabled={resending || !email}
-        >
-          {resending ? 'Sending…' : 'Resend code'}
-        </button>
-      </form>
-    </AuthLayout>
+        {loading ? (
+          <p className="otp-loading">Verifying…</p>
+        ) : secondsLeft > 0 ? (
+          <p className="otp-resend">Resend code in {formatCountdown(secondsLeft)}</p>
+        ) : (
+          <button
+            type="button"
+            className="otp-resend otp-resend--active"
+            onClick={handleResend}
+            disabled={resending}
+          >
+            {resending ? 'Sending…' : 'Resend code'}
+          </button>
+        )}
+      </div>
+    </OtpLayout>
   );
 }

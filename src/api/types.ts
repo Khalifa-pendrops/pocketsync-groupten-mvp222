@@ -25,6 +25,8 @@ export interface RegisterResponse {
 
 export interface MessageResponse {
   message: string;
+  resendAvailableIn?: number;
+  devOtp?: string;
 }
 
 export interface ApiInstitution {

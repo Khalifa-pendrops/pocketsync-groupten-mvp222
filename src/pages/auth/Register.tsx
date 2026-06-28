@@ -10,10 +10,11 @@ function goToVerify(
   email: string,
   message: string,
   devOtp?: string,
+  resendAvailableIn?: number,
 ) {
   navigate('/verify-email', {
     replace: true,
-    state: { email, message, devOtp },
+    state: { email, message, devOtp, resendAvailableIn },
   });
 }
 
@@ -42,7 +43,13 @@ export default function Register() {
         termsAccepted,
       });
 
-      goToVerify(navigate, email, response.message, response.devOtp);
+      goToVerify(
+        navigate,
+        email,
+        response.message,
+        response.devOtp,
+        response.resendAvailableIn,
+      );
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
