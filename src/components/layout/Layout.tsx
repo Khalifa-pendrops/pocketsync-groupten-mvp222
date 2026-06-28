@@ -1,8 +1,8 @@
 import { Outlet } from 'react-router-dom';
 import Navigation from './Navigation';
+import Notifications from './Notifications';
 import UserMenu from './UserMenu';
 import './Layout.css';
-import notifSvg from '../../assets/icons/notification.svg';
 
 const Layout = () => {
   return (
@@ -11,12 +11,7 @@ const Layout = () => {
       <div className="layout-right">
         <main className="layout-content">
           <div className="top-right-container">
-            <button className="notification-btn" aria-label="Notifications">
-              <span className="notif-icon">
-                <img src={notifSvg} alt="" width="24" height="24" />
-              </span>
-              <span className="notif-badge">3</span>
-            </button>
+            <Notifications />
             <UserMenu />
           </div>
           <div className="layout-page">

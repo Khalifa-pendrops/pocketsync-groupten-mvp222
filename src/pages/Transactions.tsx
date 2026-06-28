@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ApiError } from '../api/errors';
 import type { TransactionRow } from '../types';
 import { transactionService, type TransactionQuery } from '../services/transactionService';
 import { formatSignedNgn, formatTransactionDate } from '../utils/format';
+import { hasSearchTerm, matchesAnySearchTerm } from '../utils/search';
 import './Transactions.css';
 import lightningSvg from '../assets/icons/lightning.svg';
 
@@ -10,6 +12,7 @@ const FILTERS = ['All', 'Income', 'Expense', 'Transfer', 'Bills', 'Airtime'] as 
 type FilterLabel = (typeof FILTERS)[number];
 
 const AIRTIME_PATTERN = /airtime|mtn|glo|airtel|data bundle|9mobile/i;
+const SEARCH_DEBOUNCE_MS = 300;
 
 function filterToQuery(filter: FilterLabel): TransactionQuery {
   switch (filter) {
@@ -45,19 +48,20 @@ function badgeClass(tx: TransactionRow): string {
 }
 
 function matchesAirtime(tx: TransactionRow): boolean {
-  return AIRTIME_PATTERN.test(tx.description) || tx.category === 'Bills' && /mtn|glo|data/i.test(tx.description);
+  return (
+    AIRTIME_PATTERN.test(tx.description) ||
+    (tx.category === 'Bills' && /mtn|glo|data/i.test(tx.description))
+  );
 }
 
-function matchesSearch(tx: TransactionRow, search: string): boolean {
-  const term = search.trim().toLowerCase();
-  if (!term) {
-    return true;
-  }
-
-  return (
-    tx.description.toLowerCase().includes(term) ||
-    tx.institution.toLowerCase().includes(term) ||
-    tx.category.toLowerCase().includes(term)
+function matchesTransactionSearch(tx: TransactionRow, search: string): boolean {
+  return matchesAnySearchTerm(
+    search,
+    tx.description,
+    tx.institution,
+    tx.category,
+    tx.type,
+    String(tx.amount),
   );
 }
 
@@ -72,46 +76,92 @@ const Transactions = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPage = useCallback(
-    async (pageNum: number, filter: FilterLabel, append: boolean) => {
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-        setError(null);
-      }
+  const fetchPage = useCallback(async (pageNum: number, filter: FilterLabel, append: boolean) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setError(null);
+    }
 
-      try {
+    try {
+      const result = await transactionService.getPage({
+        ...filterToQuery(filter),
+        page: pageNum,
+        limit: 30,
+      });
+
+      setPage(result.page);
+      setPages(result.pages);
+      setTotal(result.total);
+      setTransactions((current) =>
+        append ? [...current, ...result.transactions] : result.transactions,
+      );
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to load transactions.';
+      setError(message);
+      if (!append) {
+        setTransactions([]);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, []);
+
+  const fetchAllForSearch = useCallback(async (filter: FilterLabel) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const baseQuery = filterToQuery(filter);
+      const firstPage = await transactionService.getPage({ ...baseQuery, page: 1, limit: 30 });
+      let allTransactions = [...firstPage.transactions];
+
+      for (let nextPage = 2; nextPage <= firstPage.pages; nextPage += 1) {
         const result = await transactionService.getPage({
-          ...filterToQuery(filter),
-          page: pageNum,
+          ...baseQuery,
+          page: nextPage,
           limit: 30,
         });
-
-        setPage(result.page);
-        setPages(result.pages);
-        setTotal(result.total);
-        setTransactions((current) =>
-          append ? [...current, ...result.transactions] : result.transactions,
-        );
-      } catch (err) {
-        const message =
-          err instanceof ApiError ? err.message : 'Failed to load transactions.';
-        setError(message);
-        if (!append) {
-          setTransactions([]);
-        }
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        allTransactions = [...allTransactions, ...result.transactions];
       }
-    },
-    [],
-  );
+
+      setTransactions(allTransactions);
+      setPage(firstPage.pages || 1);
+      setPages(firstPage.pages || 1);
+      setTotal(firstPage.total);
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to load transactions.';
+      setError(message);
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, []);
 
   useEffect(() => {
+    if (hasSearchTerm(search)) {
+      return;
+    }
+
     fetchPage(1, activeFilter, false);
-  }, [activeFilter, fetchPage]);
+  }, [activeFilter, search, fetchPage]);
+
+  useEffect(() => {
+    if (!hasSearchTerm(search)) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      fetchAllForSearch(activeFilter);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [search, activeFilter, fetchAllForSearch]);
 
   const visibleTransactions = useMemo(() => {
     let rows = transactions;
@@ -120,8 +170,10 @@ const Transactions = () => {
       rows = rows.filter(matchesAirtime);
     }
 
-    return rows.filter((tx) => matchesSearch(tx, search));
+    return rows.filter((tx) => matchesTransactionSearch(tx, search));
   }, [transactions, activeFilter, search]);
+
+  const searching = hasSearchTerm(search);
 
   function handleFilterChange(filter: FilterLabel) {
     setActiveFilter(filter);
@@ -129,7 +181,7 @@ const Transactions = () => {
   }
 
   function handleLoadMore() {
-    if (page < pages && !loadingMore) {
+    if (page < pages && !loadingMore && !searching) {
       fetchPage(page + 1, activeFilter, true);
     }
   }
@@ -137,10 +189,21 @@ const Transactions = () => {
   return (
     <div className="transactions-container">
       <header className="transactions-header">
-        <h1>Transactions</h1>
-        <p>View your transaction history.</p>
+        <div className="transactions-header-row">
+          <div>
+            <h1>Transactions</h1>
+            <p>View your transaction history.</p>
+          </div>
+          <Link to="/transfer" className="transactions-transfer-btn">
+            New transfer
+          </Link>
+        </div>
         {!loading && !error && total > 0 && (
-          <p className="transactions-count">{total} transaction{total === 1 ? '' : 's'}</p>
+          <p className="transactions-count">
+            {searching
+              ? `${visibleTransactions.length} match${visibleTransactions.length === 1 ? '' : 'es'} · ${total} total`
+              : `${total} transaction${total === 1 ? '' : 's'}`}
+          </p>
         )}
       </header>
 
@@ -157,29 +220,60 @@ const Transactions = () => {
         ))}
       </div>
 
-      <div className="transactions-search">
-        <span className="search-icon">🔍</span>
+      <form
+        className="transactions-search"
+        role="search"
+        onSubmit={(event) => event.preventDefault()}
+      >
+        <span className="search-icon" aria-hidden="true">
+          🔍
+        </span>
         <input
-          type="text"
-          placeholder="Search transactions..."
+          type="search"
+          placeholder="Search by description, bank, category, or amount..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
+          aria-label="Search transactions"
         />
-      </div>
+        {searching && (
+          <button
+            type="button"
+            className="transactions-search-clear"
+            onClick={() => setSearch('')}
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+        )}
+      </form>
 
-      {loading && <p className="transactions-status">Loading transactions…</p>}
+      {loading && (
+        <p className="transactions-status">
+          {searching ? 'Searching all transactions…' : 'Loading transactions…'}
+        </p>
+      )}
 
       {error && (
         <div className="transactions-error">
           <p>{error}</p>
-          <button type="button" className="transactions-retry-btn" onClick={() => fetchPage(1, activeFilter, false)}>
+          <button
+            type="button"
+            className="transactions-retry-btn"
+            onClick={() =>
+              searching ? fetchAllForSearch(activeFilter) : fetchPage(1, activeFilter, false)
+            }
+          >
             Try again
           </button>
         </div>
       )}
 
       {!loading && !error && visibleTransactions.length === 0 && (
-        <p className="transactions-status">No transactions match your filters.</p>
+        <p className="transactions-status">
+          {searching
+            ? `No transactions match "${search.trim()}".`
+            : 'No transactions match your filters.'}
+        </p>
       )}
 
       <div className="transactions-list">
@@ -216,7 +310,7 @@ const Transactions = () => {
         })}
       </div>
 
-      {!loading && !error && page < pages && (
+      {!loading && !error && !searching && page < pages && (
         <div className="transactions-load-more">
           <button type="button" className="load-more-btn" onClick={handleLoadMore} disabled={loadingMore}>
             {loadingMore ? 'Loading…' : `Load more (${page} of ${pages})`}

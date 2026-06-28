@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { hasSearchTerm, matchesAnySearchTerm } from '../utils/search';
 import { ApiError } from '../api/errors';
 import {
   INSTITUTION_META,
@@ -88,14 +89,14 @@ const LinkAccounts = () => {
   }, [linkedAccounts]);
 
   const filteredInstitutions = useMemo(() => {
-    const term = search.trim().toLowerCase();
-
     return institutions.filter((institution) => {
       const matchesTab = activeTab === 'All' || institution.category === activeTab;
-      const matchesSearch =
-        !term ||
-        institution.name.toLowerCase().includes(term) ||
-        institution.category.toLowerCase().includes(term);
+      const matchesSearch = matchesAnySearchTerm(
+        search,
+        institution.name,
+        institution.category,
+        institution.meta.initial,
+      );
 
       return matchesTab && matchesSearch;
     });
@@ -142,22 +143,39 @@ const LinkAccounts = () => {
 
   return (
     <div className="la-container">
-      <div className="la-search">
-        <span className="la-search-icon">🔍</span>
+      <form
+        className="la-search"
+        role="search"
+        onSubmit={(event) => event.preventDefault()}
+      >
+        <span className="la-search-icon" aria-hidden="true">
+          🔍
+        </span>
         <input
-          type="text"
+          type="search"
           className="la-search-input"
           placeholder="Search for your bank or fintech"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
+          aria-label="Search for your bank or fintech"
         />
-      </div>
+        {hasSearchTerm(search) && (
+          <button
+            type="button"
+            className="la-search-clear"
+            onClick={() => setSearch('')}
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+        )}
+      </form>
 
       <div className="la-title-row">
         <div>
           <h1 className="la-title">Connect an Account</h1>
           <p className="la-subtitle">
-            Securely connect your bank or fintech account to get started with PocketSync.
+            Connect your bank or fintech account to get started with PocketSync.
           </p>
         </div>
         <div className="la-secure-badge">
@@ -283,7 +301,7 @@ const LinkAccounts = () => {
           <div>
             <p className="la-manual-title">Can&apos;t find your bank?</p>
             <p className="la-manual-desc">
-              Only GTBank, Access Bank, Kuda, Opay, and Moniepoint are supported in this MVP.
+              We currently support GTBank, Access Bank, Kuda, Opay, and Moniepoint.
             </p>
           </div>
         </div>
@@ -308,7 +326,7 @@ const LinkAccounts = () => {
             <div className="la-step-body">
               <p className="la-step-num">2. Secure login</p>
               <p className="la-step-desc">
-                You&apos;ll be redirected to your bank to securely log in.
+                You&apos;ll be redirected to your bank to log in.
               </p>
             </div>
           </div>

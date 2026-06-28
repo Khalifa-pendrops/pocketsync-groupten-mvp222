@@ -69,4 +69,4 @@ export interface BillCategory {
   count: number;
 }
 
-// UI view-model types live here. Backend-canonical shapes are in src/api/types.ts.
+

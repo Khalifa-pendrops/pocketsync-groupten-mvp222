@@ -1,5 +1,3 @@
-/** Backend-canonical API types — shapes match server responses exactly. */
-
 export interface ApiUser {
   id: string;
   email: string;
@@ -122,6 +120,35 @@ export interface PayBillResponse {
     amount: number;
     billProvider: string;
     account: ApiLinkedAccount;
+    transaction: ApiTransaction;
+  };
+}
+
+export interface InternalTransferResponse {
+  message: string;
+  transfer: {
+    reference: string;
+    amount: number;
+    fromAccount: ApiLinkedAccount;
+    toAccount: ApiLinkedAccount;
+    debitTransaction: ApiTransaction;
+    creditTransaction: ApiTransaction;
+  };
+}
+
+export interface InterbankTransferResponse {
+  message: string;
+  transfer: {
+    reference: string;
+    nipReference: string;
+    amount: number;
+    status: string;
+    fromAccount: ApiLinkedAccount;
+    recipient: {
+      bank: string;
+      accountNumber: string;
+      name: string;
+    };
     transaction: ApiTransaction;
   };
 }

@@ -9,4 +9,9 @@ export { billService } from './billService';
 export type { PayBillPayload } from './billService';
 export { dashboardService } from './dashboardService';
 export { onboardingService } from './onboardingService';
-export type { TransactionQuery, TransactionPage } from './transactionService';
+export type {
+  TransactionQuery,
+  TransactionPage,
+  InternalTransferPayload,
+  InterbankTransferPayload,
+} from './transactionService';

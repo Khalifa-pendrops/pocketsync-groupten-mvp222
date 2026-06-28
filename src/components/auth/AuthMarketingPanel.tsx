@@ -27,9 +27,8 @@ export default function AuthMarketingPanel() {
                 <h2>One smart dashboard.</h2>
               </div>
               <p className="auth-marketing-copy-paragraph">
-                Connect your bank and fintech accounts, track transactions, manage
-                budgets, and make smarter financial decisions from one secure
-                place.
+                Connect your bank and fintech accounts, track spending, pay bills,
+                and move money from one place.
               </p>
             </div>
 

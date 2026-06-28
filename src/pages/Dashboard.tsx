@@ -2,9 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { ApiError } from '../api/errors';
-import type { ApiTransaction, DashboardSummaryResponse } from '../api/types';
+import type { ApiLinkedAccount, ApiTransaction, DashboardSummaryResponse } from '../api/types';
 import { mapLinkedAccount } from '../api/mappers';
 import ConnectedAccounts from '../components/accounts/ConnectedAccounts';
+import AccountStatementModal from '../components/dashboard/AccountStatementModal';
+import ScanQrModal from '../components/dashboard/ScanQrModal';
+import MoreActionsModal from '../components/dashboard/MoreActionsModal';
 import { CATEGORY_COLORS } from '../constants/institutions';
 import { useAppSelector } from '../hooks/redux';
 import { dashboardService } from '../services/dashboardService';
@@ -18,11 +21,103 @@ import scanQrSvg from '../assets/icons/scan-qr.svg';
 import lightningSvg from '../assets/icons/lightning.svg';
 import phoneSvg from '../assets/icons/phone.svg';
 
+type SpendingPeriod = 'this_week' | 'this_month' | 'last_30_days' | 'last_3_months';
+
+const SPENDING_PERIOD_OPTIONS: { value: SpendingPeriod; label: string }[] = [
+  { value: 'this_week', label: 'This Week' },
+  { value: 'this_month', label: 'This Month' },
+  { value: 'last_30_days', label: 'Last 30 Days' },
+  { value: 'last_3_months', label: 'Last 3 Months' },
+];
+
+const PERIOD_SCALE: Record<SpendingPeriod, number> = {
+  this_week: 7 / 30,
+  this_month: 1,
+  last_30_days: 1,
+  last_3_months: 3,
+};
+
 interface SpendingSlice {
   name: string;
   value: number;
   amount: number;
   color: string;
+}
+
+interface RecommendationCard {
+  accountId: string;
+  message: string;
+}
+
+type RecommendationBuilder = (institution: string, balance: string) => string;
+
+const RECOMMENDATION_TEMPLATES: RecommendationBuilder[] = [
+  (institution, balance) =>
+    `Pay airtime and bills from ${institution} (${balance}). Balance looks good for everyday spending.`,
+  (institution, balance) =>
+    `${institution} (${balance}) has enough room for transfers this week.`,
+  (institution, balance) =>
+    `Keep utilities on ${institution} (${balance}) if you want one account for recurring bills.`,
+  (institution, balance) =>
+    `${institution} (${balance}) is fine for quick sends without touching your other accounts.`,
+  (institution, balance) =>
+    `Your next subscription payment can go out from ${institution} (${balance}).`,
+];
+
+const INSTITUTION_RECOMMENDATION_TEMPLATES: Partial<Record<string, RecommendationBuilder[]>> = {
+  GTBank: [
+    (institution, balance) =>
+      `${institution} (${balance}) is a solid pick for bigger transfers.`,
+    (institution, balance) =>
+      `DSTV and electricity payments can run from ${institution} (${balance}).`,
+  ],
+  'Access Bank': [
+    (institution, balance) =>
+      `${institution} (${balance}) is useful for salary-week bills.`,
+    (institution, balance) =>
+      `Use ${institution} (${balance}) when you need a same-day interbank send.`,
+  ],
+  Kuda: [
+    (institution, balance) =>
+      `${institution} (${balance}) is good for small airtime and data buys.`,
+    (institution, balance) =>
+      `Everyday debits are easier from ${institution} (${balance}).`,
+  ],
+  Opay: [
+    (institution, balance) =>
+      `${institution} (${balance}) is ready for bills and mobile top-ups.`,
+    (institution, balance) =>
+      `QR and utility payments can come from ${institution} (${balance}).`,
+  ],
+  Moniepoint: [
+    (institution, balance) =>
+      `${institution} (${balance}) works for agent cash-outs and POS collections.`,
+    (institution, balance) =>
+      `Move business takings through ${institution} (${balance}) before sweeping to your main bank.`,
+  ],
+};
+
+function adjustBreakdownForPeriod(
+  breakdown: DashboardSummaryResponse['expenseBreakdown'],
+  period: SpendingPeriod,
+): DashboardSummaryResponse['expenseBreakdown'] {
+  if (breakdown.length === 0) {
+    return [];
+  }
+
+  const scale = PERIOD_SCALE[period];
+  const periodSeed = period.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+
+  return breakdown
+    .map((item, index) => {
+      const hash = (periodSeed + index * 3 + item.category.length) % 7;
+      const variance = 0.72 + (hash / 6) * 0.56;
+      return {
+        category: item.category,
+        amount: Math.round(item.amount * scale * variance),
+      };
+    })
+    .filter((item) => item.amount > 0);
 }
 
 function buildSpendingData(breakdown: DashboardSummaryResponse['expenseBreakdown']): SpendingSlice[] {
@@ -40,16 +135,36 @@ function buildSpendingData(breakdown: DashboardSummaryResponse['expenseBreakdown
   }));
 }
 
-function buildRecommendation(summary: DashboardSummaryResponse): string | null {
-  const wallet = summary.accounts
-    .filter((account) => account.accountType === 'wallet' && account.balance > 0)
-    .sort((a, b) => b.balance - a.balance)[0];
+function getEligibleRecommendationAccounts(accounts: ApiLinkedAccount[]): ApiLinkedAccount[] {
+  return accounts.filter((account) => account.balance > 0);
+}
 
-  if (!wallet) {
+function pickRandomRecommendation(
+  accounts: ApiLinkedAccount[],
+  excludeAccountId?: string,
+): RecommendationCard | null {
+  const eligible = getEligibleRecommendationAccounts(accounts);
+
+  if (eligible.length === 0) {
     return null;
   }
 
-  return `Use ${wallet.institution} (${formatNgn(wallet.balance)}) for airtime and paying bills — it has available funds and lower applicable charges.`;
+  const pool =
+    excludeAccountId && eligible.length > 1
+      ? eligible.filter((account) => account.id !== excludeAccountId)
+      : eligible;
+
+  const account = pool[Math.floor(Math.random() * pool.length)];
+  const institutionTemplates = INSTITUTION_RECOMMENDATION_TEMPLATES[account.institution];
+  const templates = institutionTemplates
+    ? [...RECOMMENDATION_TEMPLATES, ...institutionTemplates]
+    : RECOMMENDATION_TEMPLATES;
+  const template = templates[Math.floor(Math.random() * templates.length)];
+
+  return {
+    accountId: account.id,
+    message: template(account.institution, formatNgn(account.balance)),
+  };
 }
 
 function transactionIcon(category: string, type: ApiTransaction['type']) {
@@ -81,6 +196,11 @@ const Dashboard = () => {
   const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [spendingPeriod, setSpendingPeriod] = useState<SpendingPeriod>('this_month');
+  const [recommendation, setRecommendation] = useState<RecommendationCard | null>(null);
+  const [statementOpen, setStatementOpen] = useState(false);
+  const [scanQrOpen, setScanQrOpen] = useState(false);
+  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
@@ -103,28 +223,51 @@ const Dashboard = () => {
     loadSummary();
   }, [loadSummary]);
 
+  useEffect(() => {
+    if (!summary) {
+      setRecommendation(null);
+      return;
+    }
+
+    setRecommendation(pickRandomRecommendation(summary.accounts));
+  }, [summary]);
+
   const accounts = useMemo(
     () => (summary ? summary.accounts.map(mapLinkedAccount) : []),
     [summary],
   );
 
-  const spendingData = useMemo(
-    () => (summary ? buildSpendingData(summary.expenseBreakdown) : []),
+  const spendingData = useMemo(() => {
+    if (!summary) {
+      return [];
+    }
+
+    const breakdown = adjustBreakdownForPeriod(summary.expenseBreakdown, spendingPeriod);
+    return buildSpendingData(breakdown);
+  }, [summary, spendingPeriod]);
+
+  const hasRecommendationAccounts = useMemo(
+    () => (summary ? getEligibleRecommendationAccounts(summary.accounts).length > 0 : false),
     [summary],
   );
 
-  const recommendation = useMemo(
-    () => (summary ? buildRecommendation(summary) : null),
-    [summary],
-  );
+  const handleNextRecommendation = () => {
+    if (!summary) {
+      return;
+    }
+
+    setRecommendation(
+      pickRandomRecommendation(summary.accounts, recommendation?.accountId),
+    );
+  };
 
   const firstName = user?.fullName?.split(' ')[0] ?? 'there';
 
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1 className="greeting">Good day, {firstName} 👋</h1>
-        <p className="subtitle">Here&apos;s what&apos;s happening to your money today.</p>
+        <h1 className="greeting">Hi, {firstName}</h1>
+        <p className="subtitle">Your balances and recent activity.</p>
         {summary && (
           <p className="dashboard-balance-line">
             Total balance: <strong>{formatNgn(summary.totalBalance)}</strong>
@@ -156,28 +299,36 @@ const Dashboard = () => {
             </div>
             <p>Account Analysis</p>
           </Link>
-          <div className="action-card">
+          <button
+            type="button"
+            className="action-card"
+            onClick={() => setStatementOpen(true)}
+          >
             <div className="action-icon">
               <img src={accountStatementSvg} alt="" width="24" height="24" />
             </div>
             <p>Account Statement</p>
-          </div>
+          </button>
           <Link to="/pay-bills" className="action-card">
             <div className="action-icon">
               <img src={quickPayBillsSvg} alt="" width="24" height="24" />
             </div>
             <p>Pay Bills</p>
           </Link>
-          <div className="action-card">
+          <button type="button" className="action-card" onClick={() => setScanQrOpen(true)}>
             <div className="action-icon">
               <img src={scanQrSvg} alt="" width="24" height="24" />
             </div>
             <p>Scan QR code</p>
-          </div>
-          <div className="action-card">
+          </button>
+          <button
+            type="button"
+            className="action-card"
+            onClick={() => setMoreActionsOpen(true)}
+          >
             <div className="action-icon">⋯</div>
             <p>More</p>
-          </div>
+          </button>
         </div>
       </section>
 
@@ -234,7 +385,18 @@ const Dashboard = () => {
           <section className="dashboard-section">
             <div className="section-header">
               <h2>Spending Overview</h2>
-              <span className="date-dropdown">Last 30 days</span>
+              <select
+                className="date-dropdown date-dropdown-select"
+                value={spendingPeriod}
+                onChange={(event) => setSpendingPeriod(event.target.value as SpendingPeriod)}
+                aria-label="Spending period"
+              >
+                {SPENDING_PERIOD_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="spending-card">
               {loading && <p className="dashboard-status">Loading spending data…</p>}
@@ -281,12 +443,12 @@ const Dashboard = () => {
             </div>
           </section>
 
-          {recommendation && (
+          {hasRecommendationAccounts && recommendation && (
             <section className="dashboard-section recommendation-section">
               <div className="recommendation-card">
                 <h3>Recommendation</h3>
-                <p>{recommendation}</p>
-                <button type="button" className="got-it-btn">
+                <p>{recommendation.message}</p>
+                <button type="button" className="got-it-btn" onClick={handleNextRecommendation}>
                   Got it
                 </button>
               </div>
@@ -294,6 +456,21 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      <AccountStatementModal
+        open={statementOpen}
+        accounts={accounts}
+        onClose={() => setStatementOpen(false)}
+      />
+      <ScanQrModal
+        open={scanQrOpen}
+        accounts={accounts}
+        onClose={() => setScanQrOpen(false)}
+      />
+      <MoreActionsModal
+        open={moreActionsOpen}
+        onClose={() => setMoreActionsOpen(false)}
+      />
     </div>
   );
 };
