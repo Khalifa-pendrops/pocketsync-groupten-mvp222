@@ -1,7 +1,8 @@
-import { FormEvent, useState } from 'react';
+import { type SubmitEvent, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/errors';
-import AuthLayout, { AuthLink } from '../../components/auth/AuthLayout';
+import AuthLayout, { AuthDangerLink, AuthLink } from '../../components/auth/AuthLayout';
+import PasswordInput from '../../components/auth/PasswordInput';
 import { useAppDispatch } from '../../hooks/redux';
 import { establishSession } from '../../lib/authFlow';
 import { authService } from '../../services/authService';
@@ -19,7 +20,7 @@ export default function Login() {
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
 
-  async function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
     setError('');
     setLoading(true);
@@ -52,11 +53,10 @@ export default function Login() {
 
   return (
     <AuthLayout
-      title="Welcome back"
-      subtitle="Sign in to manage your accounts and transactions."
+      title="Welcome 👋"
       footer={
         <>
-          Don&apos;t have an account? <AuthLink to="/register">Create one</AuthLink>
+          Don&apos;t have an account? <AuthLink to="/register">Sign Up</AuthLink>
         </>
       }
     >
@@ -65,11 +65,12 @@ export default function Login() {
         {error && <div className="auth-error">{error}</div>}
 
         <div className="auth-field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">Email or Phone</label>
           <input
             id="email"
             type="email"
-            autoComplete="email"
+            autoComplete="username"
+            placeholder="you@example.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -78,22 +79,22 @@ export default function Login() {
 
         <div className="auth-field">
           <label htmlFor="password">Password</label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
+            placeholder="Enter your password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
           />
         </div>
 
-        <p style={{ textAlign: 'right', fontSize: 'var(--body-4)' }}>
-          <AuthLink to="/forgot-password">Forgot password?</AuthLink>
-        </p>
+        <div className="auth-forgot-row">
+          <AuthDangerLink to="/forgot-password">Forgot Password?</AuthDangerLink>
+        </div>
 
         <button type="submit" className="auth-submit" disabled={loading}>
-          {loading ? 'Signing in…' : 'Sign in'}
+          {loading ? 'Signing in…' : 'Log In'}
         </button>
       </form>
     </AuthLayout>

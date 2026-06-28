@@ -1,7 +1,8 @@
-import { FormEvent, useState } from 'react';
+import { type SubmitEvent, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/errors';
 import AuthLayout, { AuthLink } from '../../components/auth/AuthLayout';
+import PasswordInput from '../../components/auth/PasswordInput';
 import { authService } from '../../services/authService';
 
 interface ResetPasswordState {
@@ -20,7 +21,7 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
     setError('');
     setLoading(true);
@@ -53,7 +54,7 @@ export default function ResetPassword() {
       subtitle="Enter the code from your email and choose a new password."
       footer={
         <>
-          <AuthLink to="/login">Back to sign in</AuthLink>
+          <AuthLink to="/login">Back to Log In</AuthLink>
         </>
       }
     >
@@ -61,10 +62,11 @@ export default function ResetPassword() {
         {error && <div className="auth-error">{error}</div>}
 
         <div className="auth-field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">Email or Phone</label>
           <input
             id="email"
             type="email"
+            placeholder="you@example.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -77,6 +79,7 @@ export default function ResetPassword() {
             id="code"
             type="text"
             inputMode="numeric"
+            placeholder="000000"
             value={code}
             onChange={(event) => setCode(event.target.value)}
             maxLength={6}
@@ -86,9 +89,9 @@ export default function ResetPassword() {
 
         <div className="auth-field">
           <label htmlFor="password">New password</label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
+            placeholder="At least 8 characters"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             minLength={8}
@@ -98,9 +101,9 @@ export default function ResetPassword() {
 
         <div className="auth-field">
           <label htmlFor="confirmPassword">Confirm password</label>
-          <input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
+            placeholder="Re-enter your password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             minLength={8}
